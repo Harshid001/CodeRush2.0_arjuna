@@ -196,7 +196,7 @@ npm run dev
 
 | Name | Role / Focus |
 | :--- | :--- |
-| **Harshid Soni** | Team Member |
+| **Harshid Soni** | Team Leader |
 | **Manan Patel** | Team Member |
 | **Mayank Lumbhani** | Team Member |
 | **Aryan Sabasana** | Team Member |
