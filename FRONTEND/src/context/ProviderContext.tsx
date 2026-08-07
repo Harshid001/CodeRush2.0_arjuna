@@ -5,7 +5,7 @@ import { Provider } from "../lib/x402/types";
 import { INITIAL_PROVIDERS } from "../lib/data/providers";
 import { findBestProvider } from "../lib/recommendation";
 import { generateId } from "../lib/utils";
-import { fetchBackendProviders, createBackendProvider } from "../lib/api";
+import { fetchBackendProviders, createBackendProvider, checkBackendHealth } from "../lib/api";
 
 interface ProviderContextType {
   providers: Provider[];
@@ -26,6 +26,8 @@ export const ProviderProvider = ({ children }: { children: ReactNode }) => {
 
   React.useEffect(() => {
     async function loadBackendProviders() {
+      const health = await checkBackendHealth();
+      if (!health.running) return;
       const backendProviders = await fetchBackendProviders();
       if (backendProviders && backendProviders.length > 0) {
         setProviders(backendProviders);

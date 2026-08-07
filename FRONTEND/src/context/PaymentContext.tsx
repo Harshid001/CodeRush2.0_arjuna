@@ -14,6 +14,7 @@ import {
   updateBackendPolicy,
   recordBackendPayment,
   fetchBackendReceipts,
+  checkBackendHealth,
 } from "../lib/api";
 
 interface SpendState {
@@ -89,6 +90,9 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
 
   React.useEffect(() => {
     async function initBackendData() {
+      const health = await checkBackendHealth();
+      if (!health.running) return;
+
       const bPolicy = await fetchBackendPolicy();
       if (bPolicy) setPolicyLimits(bPolicy);
 

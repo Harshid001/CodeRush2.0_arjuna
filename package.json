@@ -1,0 +1,12 @@
+{
+  "name": "pay-per-use-ai-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix FRONTEND run dev",
+    "build": "npm --prefix FRONTEND run build",
+    "start": "npm --prefix FRONTEND run start",
+    "dev:backend": "npm --prefix BACKEND run dev",
+    "dev:all": "concurrently \"npm --prefix FRONTEND run dev\" \"npm --prefix BACKEND run dev\""
+  }
+}
