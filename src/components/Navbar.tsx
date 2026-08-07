@@ -30,6 +30,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Fallback demo wallet state when no browser extension is detected
   const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
@@ -41,16 +42,23 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const activeAddress = address || demoWalletAddress;
-  const activeIsConnected = isConnected || !!demoWalletAddress;
-  const isWrongNetwork = isConnected && chainId !== baseSepolia.id;
+  useEffect(() => {
+    setMounted(true);
+    const fn = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+
+  const activeAddress = mounted ? (address || demoWalletAddress) : null;
+  const activeIsConnected = mounted ? (isConnected || !!demoWalletAddress) : false;
+  const isWrongNetwork = mounted && isConnected && chainId !== baseSepolia.id;
 
   // Fetch real ETH balance on Base Sepolia
   const { data: ethBalanceData } = useBalance({
     address: activeAddress as `0x${string}` | undefined,
     chainId: baseSepolia.id,
     query: {
-      enabled: !!activeAddress,
+      enabled: !!activeAddress && mounted,
     },
   });
 
@@ -62,28 +70,22 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
     chainId: baseSepolia.id,
     query: {
-      enabled: !!activeAddress,
+      enabled: !!activeAddress && mounted,
     },
   });
 
   // Formatted balances
   const formattedEth = ethBalanceData
     ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
-    : isConnected
+    : activeIsConnected
     ? '0.0000 ETH'
     : '0.0450 ETH';
 
   const formattedUsdc = usdcRawBalance !== undefined
     ? `${(Number(usdcRawBalance) / 1e6).toFixed(2)} USDC`
-    : isConnected
+    : activeIsConnected
     ? '0.00 USDC'
     : '125.50 USDC';
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 24);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
 
   const handleConnect = async () => {
     // 1. Try Wagmi injected connector
@@ -257,7 +259,18 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
             {/* Wallet Button & Dropdown */}
             <div style={{ position: 'relative' }}>
-              {!activeIsConnected ? (
+              {!mounted ? (
+                <button
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+                    borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)', color: '#bbb',
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                  }}
+                >
+                  <Wallet size={13} /> Connect Wallet
+                </button>
+              ) : !activeIsConnected ? (
                 <button
                   onClick={handleConnect}
                   style={{
@@ -478,7 +491,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   </Link>
                 ))}
 
-                {!activeIsConnected ? (
+                {!mounted || !activeIsConnected ? (
                   <button
                     onClick={() => {
                       handleConnect();
