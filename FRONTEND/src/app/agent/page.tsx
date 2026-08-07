@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -16,9 +16,7 @@ import { marketplaceAgent, DecisionReport } from '@/services/agent/MarketplaceAg
 import { executionService, AgentExecutionRecord } from '@/services/agent/ExecutionService';
 import { intentService } from '@/services/agent/IntentService';
 import { usePaymentContext } from '@/context/PaymentContext';
-import { useProviderContext } from '@/context/ProviderContext';
 import { requestPaidResource } from '@/lib/x402/client';
-import { apis } from '@/lib/data/marketplaceApis';
 import { INITIAL_PROVIDERS } from '@/lib/data/providers';
 import { useWallet } from '@txnlab/use-wallet-react';
 import { ALGORAND_TESTNET_CAIP2 } from '@x402-avm/avm';
@@ -37,8 +35,6 @@ export default function AgentPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [record, setRecord] = useState<AgentExecutionRecord | null>(null);
   const [history, setHistory] = useState<AgentExecutionRecord[]>([]);
-
-  const bypassRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setHistory(executionService.getHistory());
@@ -70,7 +66,8 @@ export default function AgentPage() {
 
   /**
    * Main Single-Prompt Autonomous Agent Workflow:
-   * Executes all 12 stages automatically without intermediate button clicks.
+   * Strictly follows the project roadmap — executes DeepSeek intent parsing, candidate discovery,
+   * Policy Engine, Decision Engine, and prompts real Lute Wallet signatures for x402 payment execution.
    */
   const handleStartAgent = async () => {
     if (!prompt.trim() || isRunning) return;
@@ -126,18 +123,15 @@ export default function AgentPage() {
       setCurrentStepIndex(6);
       await new Promise((r) => setTimeout(r, 400));
 
-      // Step 8: Waiting For Wallet Signature
+      // Step 8: Waiting For Wallet Signature (Prompts Lute Wallet)
       setStage('waiting_wallet_signature');
       setCurrentStepIndex(7);
 
       const winnerProvider = apiToProvider(winnerApi);
       const defaultPayload = { prompt: `Autonomous execution for task: ${prompt}` };
 
-      let paymentResponse: any = null;
-      let isBypassed = false;
-
-      // Smart signature wrapper: attempts Lute Wallet signature, or auto-proceeds after 6s timeout if popup is pending
-      const signaturePromise = requestPaidResource(
+      // Trigger REAL x402 payment flow via Lute Wallet signer
+      const paymentResponse = await requestPaidResource(
         winnerProvider,
         defaultPayload,
         policyLimits,
@@ -150,33 +144,22 @@ export default function AgentPage() {
         }
       );
 
-      const timeoutPromise = new Promise((resolve) => {
-        const timer = setTimeout(() => {
-          isBypassed = true;
-          resolve({ timeout: true });
-        }, 6000);
-
-        bypassRef.current = () => {
-          clearTimeout(timer);
-          isBypassed = true;
-          resolve({ timeout: true });
-        };
-      });
-
-      try {
-        const raceResult: any = await Promise.race([signaturePromise, timeoutPromise]);
-        if (raceResult && raceResult.timeout) {
-          console.log('[Autonomous Agent] Signature step auto-proceeded via timeout/demo mode.');
-        } else {
-          paymentResponse = raceResult;
-        }
-      } catch (e: any) {
-        console.warn('[Autonomous Agent] Wallet sign notice:', e);
-      }
-
       if (paymentResponse?.trace) {
         addTrace(paymentResponse.trace);
       }
+
+      if ('error' in paymentResponse && paymentResponse.error) {
+        const errMessage = typeof paymentResponse.error === 'string'
+          ? paymentResponse.error
+          : (paymentResponse.error as any)?.message || JSON.stringify(paymentResponse.error);
+        throw new Error(errMessage);
+      }
+
+      if (!('receipt' in paymentResponse) || !paymentResponse.receipt) {
+        throw new Error('On-chain settlement failed: No valid Algorand transaction receipt returned.');
+      }
+
+      const confirmedReceipt: Receipt = paymentResponse.receipt;
 
       // Step 9: Payment Confirmed & Provider Executed
       setStage('payment_confirmed');
@@ -188,44 +171,6 @@ export default function AgentPage() {
       await new Promise((r) => setTimeout(r, 300));
 
       // Step 10 & 11: Receipt & Invoice Generation
-      const confirmedReceipt: Receipt = (paymentResponse && 'receipt' in paymentResponse && paymentResponse.receipt)
-        ? paymentResponse.receipt
-        : {
-            id: `rcpt_${Date.now()}`,
-            providerId: winnerProvider.id,
-            providerName: winnerProvider.name,
-            requirement: {
-              providerId: winnerProvider.id,
-              scheme: winnerProvider.paymentType,
-              amount: winnerProvider.price,
-              currency: 'ALGO',
-              network: ALGORAND_TESTNET_CAIP2,
-              payToAddress: winnerProvider.payToAddress,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              nonce: `nonce_${Date.now()}`,
-            },
-            payload: {
-              requirementNonce: `nonce_${Date.now()}`,
-              amount: winnerProvider.price,
-              payerKeyId: activeAccount?.address || '0x0_AVM_Address',
-              signature: 'sig_avm_confirmed',
-              signedAt: new Date().toISOString(),
-            },
-            verification: { valid: true },
-            settlement: {
-              settled: true,
-              settlementId: `tx_algorand_${Date.now()}`,
-              settledAt: new Date().toISOString(),
-              finalAmount: winnerProvider.price,
-            },
-            inputHash: 'hash_input_001',
-            outputHash: 'hash_output_001',
-            costActual: winnerProvider.price,
-            latencyMs: 120,
-            status: 'success',
-            createdAt: new Date().toISOString(),
-          };
-
       addReceipt(confirmedReceipt);
       setReceipt(confirmedReceipt);
 
@@ -252,12 +197,6 @@ export default function AgentPage() {
       setReport((prev) => (prev ? { ...prev, error: errText } : null));
       setStage('failed');
       setIsRunning(false);
-    }
-  };
-
-  const handleBypassSignature = () => {
-    if (bypassRef.current) {
-      bypassRef.current();
     }
   };
 
@@ -313,7 +252,7 @@ export default function AgentPage() {
               AI Marketplace Agent
             </h1>
             <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#555555', maxWidth: 640 }}>
-              Type ONE request. The agent automatically discovers, evaluates policies, ranks decisions, purchases on-chain, and generates your invoice.
+              Type ONE request. The agent automatically discovers, evaluates policies, ranks decisions, prompts Lute Wallet signature, purchases on-chain, and generates your invoice.
             </p>
           </motion.div>
 
@@ -332,7 +271,6 @@ export default function AgentPage() {
               currentStepIndex={currentStepIndex}
               winnerName={report?.winner?.name}
               winnerPrice={report?.winner?.price}
-              onBypassSignature={handleBypassSignature}
             />
           )}
 
