@@ -1,19 +1,19 @@
+import { wrapFetchWithPayment, x402Client } from "@x402-avm/fetch";
+import { toClientAvmSigner, ClientAvmSigner } from "@x402-avm/avm";
+import { registerExactAvmScheme } from "@x402-avm/avm/exact/client";
 import {
   Provider,
   PolicyLimits,
   Receipt,
-  PaymentRequirement,
-  PaymentPayload,
   TransactionTrace,
 } from "./types";
 import { checkPolicy } from "./policy";
-import { signPaymentPayload } from "./signature";
-import { verify, settle } from "./facilitator";
 import { TraceBuilder } from "./trace";
 import { generateId, hashString } from "../utils";
-import { findBestProvider } from "../recommendation";
 
 export interface RequestPaidResourceOptions {
+  activeAccount?: any;
+  signTransactions?: any;
   forceDisappear?: boolean;
   forcePriceChange?: boolean;
   forceMalformed402?: boolean;
@@ -21,7 +21,55 @@ export interface RequestPaidResourceOptions {
   forceSettlementFail?: boolean;
   allProviders?: Provider[];
   payerKeyId?: string;
-  usageMetric?: number; // e.g. 0.65 for metered "upto" scheme
+  usageMetric?: number;
+}
+
+/**
+ * Creates an x402-wrapped fetch instance configured with the connected Algorand wallet signer.
+ */
+export function createPaidFetch(activeAccount: any, signTransactions: any) {
+  if (!activeAccount || !signTransactions) {
+    console.warn("[x402 Client] createPaidFetch called without activeAccount or signTransactions — falling back to raw fetch.");
+    return fetch;
+  }
+
+  let signer: ClientAvmSigner;
+  if (typeof activeAccount === "string") {
+    signer = toClientAvmSigner(activeAccount);
+  } else {
+    signer = {
+      address: activeAccount.address,
+      signTransactions: async (txns: Uint8Array[], indexesToSign?: number[]) => {
+        console.log("[x402 Client] [HOP 2] Signing AVM transaction group via Lute Wallet:", {
+          signerAddress: activeAccount.address,
+          txnsCount: txns.length,
+          indexesToSign,
+          txnsHexPreview: txns.map((t) =>
+            Array.from(t.slice(0, 16))
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("")
+          ),
+        });
+        try {
+          const signedResults = await signTransactions(txns, indexesToSign);
+          console.log("[x402 Client] [HOP 2] AVM transaction group signed successfully:", {
+            signedCount: signedResults ? signedResults.length : 0,
+            signedByteSizes: signedResults
+              ? signedResults.map((r: any) => (r ? `${r.length} bytes` : "null (unsigned fee payer)"))
+              : null,
+          });
+          return signedResults;
+        } catch (err) {
+          console.error("[x402 Client] [HOP 2] Lute Wallet signing REJECTED or FAILED:", err);
+          throw err;
+        }
+      },
+    };
+  }
+
+  const client = new x402Client();
+  registerExactAvmScheme(client, { signer });
+  return wrapFetchWithPayment(fetch, client);
 }
 
 export async function requestPaidResource(
@@ -43,13 +91,8 @@ export async function requestPaidResource(
 > {
   const startTime = Date.now();
   const traceBuilder = new TraceBuilder(provider.id, provider.name);
-  const payerKey = options.payerKeyId || "sim_key_dev_default";
 
-  // =========================================================================
   // STEP 1: POLICY PRE-CHECK
-  // =========================================================================
-  // PROMPT INJECTION BOUNDARY: Evaluated strictly on structured fields (provider.id, provider.price, provider.qualityScore).
-  // Provider description text is completely ignored.
   const policyResult = checkPolicy(
     {
       providerId: provider.id,
@@ -72,7 +115,6 @@ export async function requestPaidResource(
         qualityScore: provider.qualityScore,
         policyLimits: policy,
         currentSpend,
-        promptInjectionBoundaryNote: "Checked structured fields only. Description text was ignored.",
       },
       "error"
     );
@@ -106,312 +148,245 @@ export async function requestPaidResource(
       providerId: provider.id,
       price: provider.price,
       qualityScore: provider.qualityScore,
-      promptInjectionBoundaryNote: "Evaluated strictly on structured fields. Description text ignored.",
     },
     "success"
   );
 
-  // =========================================================================
-  // STEP 2: INITIAL REQUEST → SIMULATED 402 PAYMENT REQUIRED
-  // =========================================================================
-  if (options.forceMalformed402) {
-    const malformedError = "HTTP 402 Error: Received corrupt payment requirement object (missing nonce & negative price).";
-    traceBuilder.addStep(
-      "HTTP_402_REQUIREMENT",
-      "HTTP 402 Payment Required (MALFORMED)",
-      malformedError,
-      {
-        rawHeader: "HTTP/1.1 402 Payment Required",
-        corruptedPayload: { nonce: null, amount: -1.0, payToAddress: "invalid" },
-      },
-      "error"
-    );
-    const trace = traceBuilder.fail(malformedError);
-    return { error: malformedError, trace };
+  // STEP 2: HTTP 402 PAYMENT HANDSHAKE via @x402-avm/fetch & ExactAvmScheme
+  let targetEndpoint = provider.endpoint || `/api/providers/${provider.id}`;
+  if (typeof window !== "undefined" && targetEndpoint.startsWith("/")) {
+    targetEndpoint = `${window.location.origin}${targetEndpoint}`;
   }
 
-  // Generate requirement nonce or simulate replay nonce scenario
-  let nonce = generateId("nonce");
-  if (options.forceReplayNonce) {
-    const existingNonces = Array.from(usedNonces);
-    if (existingNonces.length > 0) {
-      nonce = existingNonces[0]; // Replay an existing nonce!
-    }
-  }
-
-  // Simulate price change scenario if requested
-  const requirementAmount = options.forcePriceChange ? provider.price * 2.5 : provider.price;
-
-  const requirement: PaymentRequirement = {
+  console.log("[x402 Client] [HOP 1] Initiating paid resource request:", {
+    targetEndpoint,
     providerId: provider.id,
-    scheme: provider.paymentType,
-    amount: requirementAmount,
-    currency: "USD",
-    network: provider.network,
-    payToAddress: provider.payToAddress,
-    expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    nonce,
-  };
+    activeAccount: options.activeAccount?.address || null,
+    hasSigner: !!options.signTransactions,
+    requestInput,
+  });
 
   traceBuilder.addStep(
     "HTTP_402_REQUIREMENT",
-    "HTTP 402 Payment Required Received",
-    `Server returned HTTP 402 with x402 payment requirements. Price: $${requirement.amount.toFixed(4)} (${requirement.scheme} scheme).`,
-    {
-      httpStatus: 402,
-      requirement,
-      note: options.forcePriceChange ? "SIMULATED ADVERSARIAL CASE: Price changed after requirement generation." : undefined,
-    },
+    "x402 Payment Negotiation Initiated",
+    `Targeting protected endpoint ${targetEndpoint} with Algorand TestNet AVM settlement.`,
+    { endpoint: targetEndpoint },
     "info"
   );
 
-  // =========================================================================
-  // STEP 3: BUILD AND SIGN PAYMENT PAYLOAD
-  // =========================================================================
-  // Notice: If price changed mid-flow, client signs original expected price
-  const payloadAmount = options.forcePriceChange ? provider.price : requirement.amount;
+  try {
+    let fetchFn = fetch;
 
-  const signature = signPaymentPayload(requirement.nonce, payloadAmount, payerKey);
+    if (options.activeAccount && options.signTransactions) {
+      fetchFn = createPaidFetch(options.activeAccount, options.signTransactions);
+      traceBuilder.addStep(
+        "PAYLOAD_SIGNING",
+        "Lute Wallet AVM Signer Configured",
+        "Wired ClientAvmSigner & ExactAvmScheme with connected Algorand account.",
+        { activeAccountAddress: options.activeAccount?.address },
+        "success"
+      );
+    } else {
+      console.warn("[x402 Client] [HOP 1] WARNING: Wallet signer not connected! Sending raw unauthenticated fetch.");
+      traceBuilder.addStep(
+        "PAYLOAD_SIGNING",
+        "Standard HTTP Fetch (Wallet Not Connected)",
+        "Wallet signer not connected; sending standard HTTP request.",
+        {},
+        "warning"
+      );
+    }
 
-  const payload: PaymentPayload = {
-    requirementNonce: requirement.nonce,
-    amount: payloadAmount,
-    payerKeyId: payerKey,
-    signature,
-    signedAt: new Date().toISOString(),
-  };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  traceBuilder.addStep(
-    "PAYLOAD_SIGNING",
-    "Payment Payload Constructed & Signed",
-    "Client constructed Capped Payment Payload and signed with simulated key.",
-    {
-      payload,
-      securityNote: "Simulated signature — no real key material used.",
-    },
-    "success"
-  );
+    let response: Response;
+    try {
+      response = await fetchFn(targetEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestInput),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
-  // =========================================================================
-  // STEP 4: RETRY REQUEST WITH PAYMENT ATTACHED
-  // =========================================================================
-  if (options.forceDisappear) {
-    const disappearError = "PROVIDER DISAPPEARED: Target node returned HTTP 404 / Connection Timeout on payment retry.";
+    const latencyMs = Date.now() - startTime;
+
+    const rawHeader =
+      response.headers.get("PAYMENT-RESPONSE") ||
+      response.headers.get("payment-response") ||
+      response.headers.get("X-PAYMENT-SETTLEMENT") ||
+      response.headers.get("x-payment-settlement");
+
+    let confirmedTxId: string | null = null;
+    if (rawHeader) {
+      try {
+        if (rawHeader.trim().startsWith("{")) {
+          const parsed = JSON.parse(rawHeader);
+          confirmedTxId = parsed.transaction || parsed.settlementId || parsed.txId || null;
+        } else {
+          const decodedText = typeof atob === "function" ? atob(rawHeader) : Buffer.from(rawHeader, "base64").toString("utf-8");
+          if (decodedText.trim().startsWith("{")) {
+            const parsed = JSON.parse(decodedText);
+            confirmedTxId = parsed.transaction || parsed.settlementId || parsed.txId || null;
+          } else {
+            confirmedTxId = rawHeader;
+          }
+        }
+      } catch (e) {
+        confirmedTxId = rawHeader;
+      }
+    }
+
+    console.log("[x402 Client] [HOP 3] Server response received:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      rawHeader,
+      confirmedTxId,
+      contentType: response.headers.get("content-type"),
+    });
+
+    if (!response.ok) {
+      let errorText = `HTTP Error ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = await response.clone().json();
+        errorText = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+      } catch (e) {
+        // ignore body parse error
+      }
+
+      console.error("[x402 Client] [HOP 3] Server returned non-ok error status:", {
+        status: response.status,
+        errorText,
+      });
+
+      traceBuilder.addStep(
+        "PROVIDER_EXECUTION",
+        "Provider API Request Returned Error Status",
+        errorText,
+        { status: response.status },
+        "error"
+      );
+      const trace = traceBuilder.fail(errorText);
+      return { error: errorText, trace };
+    }
+
+    let resultData: any = null;
+    try {
+      resultData = await response.clone().json();
+    } catch (e) {
+      resultData = {};
+    }
+
+    if (!confirmedTxId && resultData) {
+      confirmedTxId =
+        resultData.paymentSettlement ||
+        resultData.transaction ||
+        resultData.settlementId ||
+        resultData.txHash ||
+        null;
+    }
+
+    // STRICT FIX: Verify real settlement header or decoded transaction ID from facilitator before declaring success!
+    if (!confirmedTxId) {
+      const errorMsg =
+        "Settlement Error: Server returned 200 OK, BUT no valid on-chain settlement header (PAYMENT-RESPONSE or x-payment-settlement) was returned by the facilitator.";
+      console.error("[x402 Client] [CRITICAL GATING FAILURE]", errorMsg);
+
+      traceBuilder.addStep(
+        "PROVIDER_EXECUTION",
+        "On-Chain Settlement Header Missing",
+        errorMsg,
+        { status: response.status },
+        "error"
+      );
+      const trace = traceBuilder.fail(errorMsg);
+      return { error: errorMsg, trace };
+    }
+    const inputHash = hashString(JSON.stringify(requestInput));
+    const outputHash = hashString(JSON.stringify(resultData));
+
     traceBuilder.addStep(
-      "RETRY_WITH_PAYMENT",
-      "Retry Request Failed (Provider Disappeared)",
-      disappearError,
-      {
-        retryStatus: 404,
-        error: "ECONNRESET / Node standard failure",
+      "PROVIDER_EXECUTION",
+      "Provider Execution & Settlement Complete",
+      `Target provider executed request and returned status ${response.status}. Latency: ${latencyMs}ms. Confirmed TxID: ${confirmedTxId}`,
+      { inputHash, outputHash, latencyMs, resultPreview: resultData, txHash: confirmedTxId },
+      "success",
+      latencyMs
+    );
+
+    const receipt: Receipt = {
+      id: generateId("rcpt"),
+      providerId: provider.id,
+      providerName: provider.name,
+      requirement: {
+        providerId: provider.id,
+        scheme: provider.paymentType,
+        amount: provider.price,
+        currency: "USD",
+        network: provider.network,
+        payToAddress: provider.payToAddress,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        nonce: generateId("nonce"),
       },
-      "error"
-    );
-
-    // Look up fallback provider using recommendation engine
-    const fallback = findBestProvider(
-      options.allProviders || [],
-      provider.category,
-      provider.id,
-      70
-    );
-
-    const trace = traceBuilder.fail(disappearError, fallback?.id);
-    return {
-      error: disappearError,
-      trace,
-      fallbackProvider: fallback,
-    };
-  }
-
-  traceBuilder.addStep(
-    "RETRY_WITH_PAYMENT",
-    "Request Retried with Payment Attached",
-    "Resent request to provider endpoint with X-PAYMENT payload header attached.",
-    {
-      endpoint: provider.endpoint,
-      headerAttached: "X-PAYMENT-PAYLOAD",
-    },
-    "info"
-  );
-
-  // =========================================================================
-  // STEP 5: FACILITATOR VERIFICATION
-  // =========================================================================
-  const verificationResult = verify(requirement, payload, usedNonces);
-
-  if (!verificationResult.valid) {
-    const errorReason = verificationResult.reason || "Payment verification failed.";
-    traceBuilder.addStep(
-      "FACILITATOR_VERIFY",
-      "Facilitator Verification Rejected",
-      errorReason,
-      {
-        verificationResult,
-        requirement,
-        payload,
+      payload: {
+        requirementNonce: generateId("nonce"),
+        amount: provider.price,
+        payerKeyId: options.activeAccount?.address || "lute_wallet_account",
+        signature: confirmedTxId,
+        signedAt: new Date().toISOString(),
       },
-      "error"
-    );
-
-    const trace = traceBuilder.fail(errorReason);
-    return { error: errorReason, trace };
-  }
-
-  traceBuilder.addStep(
-    "FACILITATOR_VERIFY",
-    "Facilitator Verification Passed",
-    "Facilitator confirmed nonce freshness, amount correlation, and signature validity.",
-    {
-      verificationResult,
-    },
-    "success"
-  );
-
-  // =========================================================================
-  // STEP 6: FACILITATOR SETTLEMENT
-  // =========================================================================
-  const settlementResult = settle(requirement, payload, options.usageMetric ?? 0.65, {
-    forceFailure: options.forceSettlementFail,
-  });
-
-  if (!settlementResult.settled) {
-    const settlementError = settlementResult.errorReason || "Settlement failed during clearing.";
-    traceBuilder.addStep(
-      "FACILITATOR_SETTLE",
-      "Facilitator Settlement Failed",
-      settlementError,
-      {
-        settlementResult,
+      verification: { valid: true },
+      settlement: {
+        settled: true,
+        settlementId: confirmedTxId,
+        settledAt: new Date().toISOString(),
+        finalAmount: provider.price,
       },
-      "error"
-    );
-
-    const trace = traceBuilder.fail(settlementError);
-    return { error: settlementError, trace };
-  }
-
-  traceBuilder.addStep(
-    "FACILITATOR_SETTLE",
-    "Facilitator Payment Settled",
-    `Payment cleared successfully. Final Settled Amount: $${settlementResult.finalAmount.toFixed(4)}${
-      requirement.scheme === "upto" ? " (Metered actual usage vs $ " + requirement.amount.toFixed(4) + " cap)" : ""
-    }.`,
-    {
-      settlementResult,
-      scheme: requirement.scheme,
-    },
-    "success"
-  );
-
-  // =========================================================================
-  // STEP 7: SIMULATED PROVIDER EXECUTION
-  // =========================================================================
-  const mockResult = generateMockResult(provider, requestInput);
-  const inputHash = hashString(JSON.stringify(requestInput));
-  const outputHash = hashString(JSON.stringify(mockResult));
-  const latencyMs = Date.now() - startTime;
-
-  traceBuilder.addStep(
-    "PROVIDER_EXECUTION",
-    "Provider Execution Complete",
-    `Target provider executed request and returned payload output. Latency: ${latencyMs}ms.`,
-    {
       inputHash,
       outputHash,
+      costActual: provider.price,
       latencyMs,
-      resultPreview: mockResult,
-    },
-    "success",
-    latencyMs
-  );
+      status: "success",
+      createdAt: new Date().toISOString(),
+    };
 
-  // =========================================================================
-  // STEP 8: RECEIPT GENERATION
-  // =========================================================================
-  const receipt: Receipt = {
-    id: generateId("rcpt"),
-    providerId: provider.id,
-    providerName: provider.name,
-    requirement,
-    payload,
-    verification: verificationResult,
-    settlement: settlementResult,
-    inputHash,
-    outputHash,
-    costActual: settlementResult.finalAmount,
-    latencyMs,
-    status: "success",
-    createdAt: new Date().toISOString(),
-  };
+    traceBuilder.addStep(
+      "RECEIPT_GENERATED",
+      "Receipt Issued & Stored",
+      `Immutable receipt ${receipt.id} generated with verified txId ${confirmedTxId}.`,
+      { receiptId: receipt.id, costActual: receipt.costActual, txHash: confirmedTxId },
+      "success"
+    );
 
-  traceBuilder.addStep(
-    "RECEIPT_GENERATED",
-    "Receipt Issued & Stored",
-    `Immutable receipt ${receipt.id} generated and recorded in PaymentContext.`,
-    {
-      receiptId: receipt.id,
-      costActual: receipt.costActual,
-      status: receipt.status,
-    },
-    "success"
-  );
+    const trace = traceBuilder.complete(receipt.id);
 
-  const trace = traceBuilder.complete(receipt.id);
+    return {
+      receipt,
+      result: resultData,
+      trace,
+    };
+  } catch (err: any) {
+    let errorMsg = err?.message || "x402 execution error";
+    if (err?.name === "AbortError" || errorMsg.includes("aborted")) {
+      errorMsg = "x402 request timed out: Wallet signing or facilitator response took longer than 15 seconds.";
+    } else if (errorMsg === "Failed to fetch") {
+      errorMsg = "Failed to fetch: Connection to x402 API provider or facilitator failed. Please ensure your Lute wallet is connected on Algorand TestNet and try again.";
+    }
 
-  return {
-    receipt,
-    result: mockResult,
-    trace,
-  };
-}
+    console.error("[x402 Client] [HOP 3 - EXCEPTION]", err);
 
-function generateMockResult(provider: Provider, input: unknown): unknown {
-  switch (provider.id) {
-    case "p-llama3-sentiment":
-      return {
-        sentiment: "Bullish / Positive",
-        confidenceScore: 0.964,
-        keySignals: ["Strong institutional inflow", "Low market volatility"],
-        processedAt: new Date().toISOString(),
-      };
-    case "p-vision-inspector":
-      return {
-        objectsDetected: 5,
-        labels: ["vehicle", "pedestrian", "traffic_light", "lane_marker", "building"],
-        ocrText: "MAIN ST & 4TH AVE",
-        qualityScore: 99.2,
-        computeUnitsUsed: 142,
-      };
-    case "p-crypto-orderbook":
-      return {
-        symbol: "ETH/USD",
-        topBid: 3452.10,
-        topAsk: 3452.50,
-        spread: 0.40,
-        liquidityDepthUsd: 14500000,
-        timestamp: Date.now(),
-      };
-    case "p-deepcoder-gen":
-      return {
-        generatedCode: `// Refactored x402 payment validator\nexport function validateX402Payload(payload: PaymentPayload): boolean {\n  return payload.signature.startsWith("sim_sig_");\n}`,
-        tokensUsed: 420,
-        unitTestsPassed: 12,
-        coverage: "98.4%",
-      };
-    case "p-injectable-prompt":
-      return {
-        securityNotice: "PROMPT INJECTION BLOCKED: System evaluated purely on structured fields. Text prompt instructions were completely ignored.",
-        providerId: provider.id,
-        status: "ISOLATED_AND_SAFE",
-      };
-    default:
-      return {
-        status: "success",
-        providerId: provider.id,
-        inputReceived: input,
-        timestamp: new Date().toISOString(),
-        message: "Simulated endpoint execution output.",
-      };
+    traceBuilder.addStep(
+      "PROVIDER_EXECUTION",
+      "Execution Exception Caught",
+      errorMsg,
+      { error: errorMsg, rawError: String(err) },
+      "error"
+    );
+    const trace = traceBuilder.fail(errorMsg);
+    return { error: errorMsg, trace };
   }
 }

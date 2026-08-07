@@ -39,12 +39,12 @@ function PaymentCheckoutInner() {
 
     const overallScore = computeOverallScore(api);
     const apiPrice = parsePrice(api.price);
-    const estGas = 0.0003; // mock gas in ETH
-    const gasUsd = estGas * 3500; // mock rate
+    const estGas = 0.001; // Network Fee in ALGO
+    const gasUsd = estGas * 0.20; // Estimated ALGO USD cost
     const platformFee = 0.00; // Free
     const totalCost = apiPrice + gasUsd + platformFee;
 
-    const displayAddress = connectedAddress || "0x71C83B47c04E923a10F8721102910a9E23";
+    const displayAddress = connectedAddress || "GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74";
 
     const handleProceedToPayment = () => {
         router.push(`/payment/processing?providerId=${api.id}`);
@@ -145,7 +145,7 @@ function PaymentCheckoutInner() {
 
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(90,154,90,0.1)', border: '1px solid rgba(90,154,90,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5a9a5a' }}>
                                             <Wallet size={18} />
                                         </div>
                                         <div>
@@ -153,7 +153,7 @@ function PaymentCheckoutInner() {
                                                 {displayAddress.slice(0, 6)}...{displayAddress.slice(-4)}
                                             </span>
                                             <span style={{ fontSize: 10, color: '#666', fontFamily: 'Inter', display: 'block', marginTop: 2 }}>
-                                                {isConnected ? 'MetaMask Connection Active' : 'Simulated Wallet Connected'}
+                                                {isConnected ? 'Lute Wallet Active (TestNet)' : 'Algorand Wallet Connected'}
                                             </span>
                                         </div>
                                     </div>
@@ -163,10 +163,10 @@ function PaymentCheckoutInner() {
                                         </div>
                                         <div>
                                             <span style={{ fontSize: 12, fontWeight: 600, color: '#ddd', fontFamily: 'Inter' }}>
-                                                Base Sepolia
+                                                Algorand TestNet
                                             </span>
                                             <span style={{ fontSize: 10, color: '#666', fontFamily: 'Inter', display: 'block', marginTop: 2 }}>
-                                                Chain ID: 84532
+                                                CAIP-2: algorand:SGO1GKSzy...
                                             </span>
                                         </div>
                                     </div>

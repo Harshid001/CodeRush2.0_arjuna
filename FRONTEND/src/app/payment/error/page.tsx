@@ -50,7 +50,7 @@ function PaymentErrorInner() {
                             RECOVERY SUGGESTION
                         </span>
                         <p style={{ margin: 0, color: '#777' }}>
-                            Ensure your local MetaMask network is configured to Base Sepolia, reload and verify token balance is sufficient, or select a fallback provider node.
+                            Ensure your connected Lute wallet is configured to Algorand TestNet, reload and verify your ALGO & USDC balance is sufficient, or try reconnecting your wallet.
                         </p>
                     </div>
 

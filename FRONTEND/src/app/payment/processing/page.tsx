@@ -10,6 +10,8 @@ import { usePaymentContext } from '@/context/PaymentContext';
 import { useProviderContext } from '@/context/ProviderContext';
 import { requestPaidResource } from '@/lib/x402/client';
 import { apis } from '@/lib/data/marketplaceApis';
+import { useWallet } from '@txnlab/use-wallet-react';
+import { ALGORAND_TESTNET_CAIP2 } from '@x402-avm/avm';
 import type { Provider } from '@/lib/x402/types';
 
 // ─── Steps Array ──────────────────────────────────────────
@@ -30,6 +32,7 @@ const PROCESSING_STEPS = [
 function PaymentProcessingInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { activeAccount, signTransactions } = useWallet();
 
     const { policyLimits, spendToday, usedNonces, addReceipt, addTrace, addPendingApproval } = usePaymentContext();
     const { providers: allProviders } = useProviderContext();
@@ -50,9 +53,9 @@ function PaymentProcessingInner() {
             price: numPrice,
             paymentType: isUpto ? "upto" : "exact",
             qualityScore: apiItem.qualityScore || 90,
-            payToAddress: `0x_sim_recip_${apiItem.id.replace(/[^a-zA-Z0-9]/g, '_')}_88a9`,
-            network: apiItem.network || apiItem.chain || "base-sepolia",
-            endpoint: apiItem.endpoint || `https://api.opencore.ai/v1/${apiItem.id}`,
+            payToAddress: process.env.RESOURCE_PAY_TO || 'GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74',
+            network: ALGORAND_TESTNET_CAIP2,
+            endpoint: apiItem.endpoint || `/api/providers/${apiItem.id}`,
             outputSchema: { status: "string", result: "object" },
             active: true,
         };
@@ -82,7 +85,7 @@ function PaymentProcessingInner() {
                 policyLimits,
                 spendToday,
                 usedNonces,
-                { allProviders }
+                { activeAccount, signTransactions, allProviders }
             );
 
             clearInterval(stepInterval);
@@ -103,7 +106,7 @@ function PaymentProcessingInner() {
                     });
                 }
                 router.push(`/payment/error?error=${encodeURIComponent(response.error)}&providerId=${currentProvider.id}`);
-            } else if ("receipt" in response && response.receipt) {
+            } else if ("receipt" in response && response.receipt && response.receipt.settlement?.settled && response.receipt.settlement?.settlementId) {
                 addReceipt(response.receipt);
                 
                 // Store result preview temporarily or pass via storage
@@ -112,6 +115,9 @@ function PaymentProcessingInner() {
                 }
 
                 router.push(`/payment/success?receiptId=${response.receipt.id}&providerId=${currentProvider.id}`);
+            } else {
+                const errText = ("error" in response && response.error) || "On-chain settlement failed: No confirmed Algorand transaction ID returned.";
+                router.push(`/payment/error?error=${encodeURIComponent(errText)}&providerId=${currentProvider.id}`);
             }
         } catch (err: any) {
             clearInterval(stepInterval);
@@ -119,8 +125,11 @@ function PaymentProcessingInner() {
         }
     }, [api, apiToProvider, policyLimits, spendToday, usedNonces, allProviders, addTrace, addReceipt, addPendingApproval, router]);
 
+    const hasExecutedRef = React.useRef(false);
+
     useEffect(() => {
-        if (api) {
+        if (api && !hasExecutedRef.current) {
+            hasExecutedRef.current = true;
             executePaymentFlow();
         }
     }, [api, executePaymentFlow]);

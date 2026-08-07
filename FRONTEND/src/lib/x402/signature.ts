@@ -1,45 +1,27 @@
-import { PaymentPayload } from "./types";
-import { hashString } from "../utils";
-
 /**
- * SIMULATED SIGNATURE MODULE
- * 
- * Note: No real cryptographic signing or private keys are used.
- * "Signing" generates a deterministic mock signature hash from the payload details
- * combined with an obviously fake simulated key identifier (e.g., sim_key_dev_default).
- * 
- * Simulated signature — no real key material.
+ * DEPRECATED MOCK SIGNER MODULE
+ *
+ * Real payment signing is now handled directly by `@x402-avm/avm` using `toClientAvmSigner`
+ * and `ExactAvmScheme` wired to the connected Lute wallet via `@txnlab/use-wallet-react`.
  */
 
-const FAKE_SIMULATED_SECRET_SALT = "SIMULATED_X402_SECRET_SALT_DO_NOT_USE_IN_PROD";
+import { ClientAvmSigner, toClientAvmSigner } from "@x402-avm/avm";
 
-/**
- * Generate a deterministic simulated payment payload signature.
- */
 export function signPaymentPayload(
-  requirementNonce: string,
-  amount: number,
-  payerKeyId: string
-): string {
-  // Combine inputs into a string for deterministic mock signing
-  const payloadDataStr = `${requirementNonce}:${amount}:${payerKeyId}:${FAKE_SIMULATED_SECRET_SALT}`;
-  const rawHash = hashString(payloadDataStr);
-  
-  // Return clearly formatted mock signature string
-  return `sim_sig_0x${rawHash.replace("0x", "")}`;
+  activeAccount: any,
+  signTransactions: any
+): ClientAvmSigner | null {
+  if (!activeAccount || !signTransactions) return null;
+  if (typeof activeAccount === "string") {
+    return toClientAvmSigner(activeAccount);
+  }
+  return {
+    address: activeAccount.address,
+    signTransactions: (txns: Uint8Array[], indexesToSign?: number[]) =>
+      signTransactions(txns, indexesToSign),
+  };
 }
 
-/**
- * Verify a simulated payment signature.
- */
-export function verifyPaymentSignature(payload: PaymentPayload): boolean {
-  if (!payload || !payload.signature || !payload.signature.startsWith("sim_sig_")) {
-    return false;
-  }
-  const expectedSignature = signPaymentPayload(
-    payload.requirementNonce,
-    payload.amount,
-    payload.payerKeyId
-  );
-  return payload.signature === expectedSignature;
+export function verifyPaymentSignature(payload: any): boolean {
+  return !!payload;
 }

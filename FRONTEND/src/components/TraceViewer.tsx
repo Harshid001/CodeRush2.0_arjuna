@@ -55,7 +55,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     },
     settlement: {
       status: 'confirmed',
-      txHash: '0x3f9a2b8c1e4d7f6a0c5b8e2d9f1a4c7e0b3d6f9a2c5e8b1d4f7a0c3e6b9d2f5',
+      txHash: 'J5X7K2M9N3P8Q4R1T6W9Z2Y5X8V1U4T7R0Q3P6N9M2L5K8J1H4GF',
       settledAmount: '$0.0042',
     },
   },
@@ -78,7 +78,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     },
     settlement: {
       status: 'confirmed',
-      txHash: '0x81b7e2a4c90d1f3e5b6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8',
+      txHash: 'B8M2N4P6Q8R0S2T4V6X8Z0A2C4E6G8I0K2M4P6R8T0V2X4Z6B8D0',
       settledAmount: '$0.0018',
     },
   },
@@ -150,7 +150,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
     setMounted(true);
   }, []);
 
-  const activeWallet = (mounted && algoAddress) ? algoAddress : 'NP6R27ETK85JALGO92KTESTNETSERVICENODEKEY10294857KYST6LO';
+  const activeWallet = (mounted && algoAddress) ? algoAddress : 'GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74';
 
   // Wire trace events into ReceiptStore with Web Crypto SHA-256
   useEffect(() => {

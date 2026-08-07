@@ -63,7 +63,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
     // Fallback if Lute extension isn't detected or connection was cancelled
     setShowLuteAlert(true);
-    setDemoWalletAddress('NP6R27ETK85JALGO92KTESTNETSERVICENODEKEY10294857KYST6LO');
+    setDemoWalletAddress('GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74');
   };
 
   const handleDisconnect = () => {

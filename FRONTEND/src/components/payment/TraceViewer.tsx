@@ -49,7 +49,7 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ trace }) => {
           <span className="font-bold text-white">Exchange Trace</span>
           <span
             className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-              trace.status === "success"
+              trace.status === "completed" || trace.status === "success"
                 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 : trace.status === "blocked"
                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"

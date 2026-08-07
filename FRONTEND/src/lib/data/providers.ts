@@ -1,4 +1,7 @@
 import { Provider } from "../x402/types";
+import { ALGORAND_TESTNET_CAIP2 } from "@x402-avm/avm";
+
+const DEFAULT_DEMO_ALGORAND_ADDRESS = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
 
 export const INITIAL_PROVIDERS: Provider[] = [
   {
@@ -9,9 +12,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.05,
     paymentType: "exact",
     qualityScore: 94,
-    payToAddress: "0x_sim_recip_llama_70b_88a9",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/llama3/sentiment",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-llama3-sentiment",
     outputSchema: {
       sentiment: "string",
       confidence: "number",
@@ -27,9 +30,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.25,
     paymentType: "upto",
     qualityScore: 89,
-    payToAddress: "0x_sim_recip_vision_ai_44f1",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/vision/inspect",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-vision-inspector",
     outputSchema: {
       objectsDetected: "number",
       labels: "array",
@@ -46,9 +49,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.02,
     paymentType: "exact",
     qualityScore: 98,
-    payToAddress: "0x_sim_recip_orderbook_99b3",
-    network: "arbitrum-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/market/orderbook",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-crypto-orderbook",
     outputSchema: {
       pair: "string",
       bids: "array",
@@ -65,9 +68,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.40,
     paymentType: "upto",
     qualityScore: 92,
-    payToAddress: "0x_sim_recip_deepcoder_12e7",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/code/generate",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-deepcoder-gen",
     outputSchema: {
       generatedCode: "string",
       tokensUsed: "number",
@@ -83,9 +86,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.10,
     paymentType: "exact",
     qualityScore: 75,
-    payToAddress: "0x_sim_recip_evil_proxy_666a",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/test/injection",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-injectable-prompt",
     outputSchema: {
       securityNotice: "string",
       status: "string",
@@ -101,9 +104,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 15.00,
     paymentType: "exact",
     qualityScore: 99,
-    payToAddress: "0x_sim_recip_supercomputer_7777",
-    network: "optimism-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/quantum/simulate",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-high-cost",
     outputSchema: {
       simulationResult: "string",
       iterations: "number",
@@ -118,9 +121,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.08,
     paymentType: "exact",
     qualityScore: 60,
-    payToAddress: "0x_sim_recip_flaky_node_3321",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/flaky/data",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-flaky-node",
     outputSchema: {
       status: "string",
     },
@@ -134,9 +137,9 @@ export const INITIAL_PROVIDERS: Provider[] = [
     price: 0.04,
     paymentType: "exact",
     qualityScore: 88,
-    payToAddress: "0x_sim_recip_backup_node_1100",
-    network: "base-sepolia",
-    endpoint: "https://api.simulated-node.ai/v1/backup/data",
+    payToAddress: DEFAULT_DEMO_ALGORAND_ADDRESS,
+    network: ALGORAND_TESTNET_CAIP2,
+    endpoint: "/api/providers/p-reliable-fallback",
     outputSchema: {
       status: "string",
       data: "string",

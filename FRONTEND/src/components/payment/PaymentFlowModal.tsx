@@ -7,7 +7,7 @@ import { useProviderContext } from "../../context/ProviderContext";
 import { requestPaidResource } from "../../lib/x402/client";
 import { formatCurrency } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount } from "wagmi";
+import { useWallet } from "@txnlab/use-wallet-react";
 import {
   X,
   Zap,
@@ -44,7 +44,8 @@ export const PaymentFlowModal: React.FC<PaymentFlowModalProps> = ({
   const { policyLimits, spendToday, usedNonces, addReceipt, addTrace, addPendingApproval } =
     usePaymentContext();
   const { providers: allProviders } = useProviderContext();
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { activeAccount, signTransactions, activeAddress: connectedAddress } = useWallet();
+  const isConnected = !!connectedAddress;
 
   const [currentProvider, setCurrentProvider] = useState<Provider>(initialProvider);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("review");
@@ -73,9 +74,9 @@ export const PaymentFlowModal: React.FC<PaymentFlowModalProps> = ({
 
   const [paymentStepIndex, setPaymentStepIndex] = useState<number>(0);
 
-  const displayAddress = connectedAddress || "0x71C83B47c04E923a10F8721102910a9E23";
-  const displayGas = 0.0003; // Mocked gas fee in ETH
-  const totalCost = currentProvider.price + (displayGas * 3500); // estimate total USD cost
+  const displayAddress = connectedAddress || "GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74";
+  const displayGas = 0.001; // Algorand network fee in ALGO
+  const totalCost = currentProvider.price; // USD cost
 
   const handleConfirmAndSign = async () => {
     setCheckoutStep("processing");
@@ -86,7 +87,6 @@ export const PaymentFlowModal: React.FC<PaymentFlowModalProps> = ({
     setFallbackProvider(null);
     setPaymentStepIndex(0);
 
-    // Pre-configured default task payload depending on provider category
     const defaultPayloads: Record<string, unknown> = {
       "p-llama3-sentiment": { prompt: "Analyze financial market sentiment for ETH/USD", sampleSize: 100 },
       "p-vision-inspector": { imageUrl: "https://example.com/invoice.png", task: "ocr_extraction" },
@@ -95,17 +95,12 @@ export const PaymentFlowModal: React.FC<PaymentFlowModalProps> = ({
     };
     const parsedInput = defaultPayloads[currentProvider.id] || { prompt: `Inference request for ${currentProvider.name}` };
 
-    // Standard success scenario driven automatically
     const flags = {
-      forceDisappear: false,
-      forcePriceChange: false,
-      forceMalformed402: false,
-      forceReplayNonce: false,
-      forceSettlementFail: false,
+      activeAccount,
+      signTransactions,
       allProviders,
     };
 
-    // Step animation timer simulation
     const stepInterval = setInterval(() => {
       setPaymentStepIndex((prev) => (prev < PAYMENT_STEPS.length - 1 ? prev + 1 : prev));
     }, 400);
@@ -142,13 +137,17 @@ export const PaymentFlowModal: React.FC<PaymentFlowModalProps> = ({
         if (response.fallbackProvider) {
           setFallbackProvider(response.fallbackProvider);
         }
-      } else if ("receipt" in response && response.receipt) {
+      } else if ("receipt" in response && response.receipt && response.receipt.settlement?.settled && response.receipt.settlement?.settlementId) {
         setCompletedReceipt(response.receipt);
         if ("result" in response) {
           setExecutionResult(response.result);
         }
         addReceipt(response.receipt);
         setCheckoutStep("success");
+      } else {
+        const errorText = ("error" in response && response.error) || "On-chain settlement failed: No confirmed Algorand transaction ID returned.";
+        setErrorMessage(errorText);
+        setCheckoutStep("failure");
       }
     } catch (err: any) {
       clearInterval(stepInterval);
