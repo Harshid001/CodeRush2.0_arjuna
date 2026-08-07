@@ -4,7 +4,6 @@ import { HTTPFacilitatorClient, x402ResourceServer } from "@x402-avm/core/server
 import { registerExactAvmScheme } from "@x402-avm/avm/exact/server";
 import { ALGORAND_TESTNET_CAIP2 } from "@x402-avm/avm";
 import { INITIAL_PROVIDERS } from "@/lib/data/providers";
-import { getProvider } from "@/lib/x402/registry";
 import {
   createPaymentRecord,
   addProvenanceEvent,
@@ -29,8 +28,8 @@ export async function GET(
 ) {
   const resolvedParams = await params;
   const providerId = resolvedParams.providerId;
-  const provider = getProvider(providerId);
-  const payTo = (!provider.payToAddress || provider.payToAddress.startsWith("REPLACE_WITH_")) ? DEFAULT_PAY_TO : provider.payToAddress;
+  const provider = INITIAL_PROVIDERS.find((p) => p.id === providerId) || INITIAL_PROVIDERS[0];
+  const payTo = process.env.RESOURCE_PAY_TO || provider.payToAddress || DEFAULT_PAY_TO;
 
   const paymentHeader =
     request.headers.get("authorization") ||
@@ -97,6 +96,13 @@ export async function GET(
       }
       return res;
     } catch (err: any) {
+      const errorBody = err?.response?.data || err?.response?.body || err?.cause || err?.message;
+      console.error(`[x402 Facilitator Verify ERROR]:`, {
+        message: err?.message,
+        facilitatorBody: errorBody,
+        url: FACILITATOR_URL,
+      });
+
       if (paymentId) {
         addProvenanceEvent(
           paymentId,
@@ -105,7 +111,7 @@ export async function GET(
           "failed",
           "Facilitator Verify Failed",
           err?.message || "Verify rejected by GoPlausible",
-          { error: err?.message }
+          { error: err?.message, details: errorBody }
         );
       }
       throw err;
@@ -143,6 +149,13 @@ export async function GET(
       }
       return res;
     } catch (err: any) {
+      const errorBody = err?.response?.data || err?.response?.body || err?.cause || err?.message;
+      console.error(`[x402 Facilitator Settle ERROR]:`, {
+        message: err?.message,
+        facilitatorBody: errorBody,
+        url: FACILITATOR_URL,
+      });
+
       if (paymentId) {
         addProvenanceEvent(
           paymentId,
@@ -151,7 +164,7 @@ export async function GET(
           "failed",
           "Facilitator Settlement Error",
           err?.message || "Settlement failed",
-          { error: err?.message }
+          { error: err?.message, details: errorBody }
         );
       }
       throw err;
@@ -243,7 +256,13 @@ export async function GET(
 
     return res;
   } catch (err: any) {
-    console.error(`[x402 Server ERROR] Exception during provider execution:`, err);
+    const facilitatorResponseBody = err?.response?.data || err?.response?.body || err?.cause || null;
+    console.error(`[x402 Server ERROR] Exception during provider execution:`, {
+      message: err?.message,
+      facilitatorResponse: facilitatorResponseBody,
+      stack: err?.stack,
+    });
+
     if (paymentId) {
       addProvenanceEvent(
         paymentId,
@@ -252,12 +271,22 @@ export async function GET(
         "failed",
         "Server Exception",
         err?.message || "Internal server exception",
-        { error: err?.message }
+        { error: err?.message, details: facilitatorResponseBody }
       );
     }
+
+    const detailText = typeof facilitatorResponseBody === 'string'
+      ? facilitatorResponseBody
+      : facilitatorResponseBody
+      ? JSON.stringify(facilitatorResponseBody)
+      : err?.message || 'Internal Server Error';
+
     return NextResponse.json(
       {
-        error: err?.message || "Internal Server Error during x402 payment handling",
+        error: `x402 Settlement Error: ${detailText}`,
+        message: err?.message || 'x402 payment processing failed',
+        details: facilitatorResponseBody,
+        facilitatorUrl: FACILITATOR_URL,
       },
       { status: 500 }
     );

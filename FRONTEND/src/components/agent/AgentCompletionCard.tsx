@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Download, ExternalLink, ArrowRight, RefreshCw, LayoutDashboard, ShieldCheck, FileText } from 'lucide-react';
+import { CheckCircle2, Download, ExternalLink, RefreshCw, LayoutDashboard, ShieldCheck, FileText, Bot, Receipt as ReceiptIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { DecisionReport } from '@/services/agent/MarketplaceAgent';
 import type { AgentExecutionRecord } from '@/services/agent/ExecutionService';
 import type { Receipt } from '@/lib/x402/types';
+import { exportInvoicePdf, exportReceiptPdf, exportAgentReportPdf } from '@/services/pdf/pdfExport';
 
 interface AgentCompletionCardProps {
   report: DecisionReport;
@@ -24,37 +25,35 @@ export default function AgentCompletionCard({ report, receipt, record, onRunAnot
   const invoiceId = record?.invoiceId || `inv_${Date.now()}`;
 
   const handleDownloadInvoice = () => {
-    const invoiceData = {
+    exportInvoicePdf({
       invoiceNumber: invoiceId,
       receiptId,
       date: record?.timestamp || new Date().toISOString(),
       status: 'PAID',
-      billingAddress: '0x0...x402-AVM-Testnet',
-      lineItems: [
-        {
-          description: `API Request Session - ${winner.name} (${report.intent.category})`,
-          price: winner.price,
-          amountUSD: winner.price,
-        },
-        {
-          description: 'AVM Smart Contract Network Fee',
-          price: '$0.0002',
-          amountUSD: '$0.0002',
-        },
-      ],
-      totalPaidUSD: winner.price,
-      transactionSettlementHash: txHash,
-      decisionScore: `${report.winnerScore || 92.5}/100`,
-      decisionRationale: report.rationale,
-    };
+      providerName: winner.name,
+      category: report.intent?.category,
+      amountPaid: String(winner.price),
+      transactionHash: txHash,
+    });
+  };
 
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(invoiceData, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `invoice-${invoiceId}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+  const handleDownloadReceipt = () => {
+    exportReceiptPdf({
+      receiptId,
+      providerName: winner.name,
+      settlementStatus: 'CONFIRMED',
+      transactionHash: txHash,
+      paymentTime: record?.timestamp || new Date().toISOString(),
+    });
+  };
+
+  const handleDownloadAgentReport = () => {
+    exportAgentReportPdf({
+      reportId: invoiceId.replace(/[^0-9]/g, '') || '000245',
+      report,
+      receipt,
+      record,
+    });
   };
 
   return (
@@ -121,7 +120,7 @@ export default function AgentCompletionCard({ report, receipt, record, onRunAnot
         </div>
       </div>
 
-      {/* Invoice Card Details */}
+      {/* 3 PDF Export Buttons Box */}
       <div
         style={{
           background: 'rgba(0,0,0,0.25)',
@@ -133,29 +132,77 @@ export default function AgentCompletionCard({ report, receipt, record, onRunAnot
           fontSize: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#e0e0e0' }}>
             <FileText size={15} color="#888888" />
-            <span>Generated Invoice: #{invoiceId}</span>
+            <span>PDF Export Center (Offline Generation)</span>
           </div>
+          <span style={{ fontSize: 11, color: '#5a9a5a', fontWeight: 600 }}>Professional PDF Docs Ready</span>
+        </div>
+
+        {/* Export Buttons Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }} className="grid-cols-1 md:grid-cols-3">
           <button
             onClick={handleDownloadInvoice}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 8,
-              backgroundColor: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: '#ffffff',
-              fontSize: 11,
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 10,
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              color: '#60a5fa',
+              fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',
-              transition: 'background 0.2s',
+              transition: 'all 0.2s',
             }}
           >
-            <Download size={12} /> Download Invoice (.json)
+            <FileText size={14} /> Download Invoice PDF
+          </button>
+
+          <button
+            onClick={handleDownloadReceipt}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 10,
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.25)',
+              color: '#4ade80',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <ReceiptIcon size={14} /> Download Receipt PDF
+          </button>
+
+          <button
+            onClick={handleDownloadAgentReport}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 10,
+              backgroundColor: 'rgba(168, 85, 247, 0.1)',
+              border: '1px solid rgba(168, 85, 247, 0.25)',
+              color: '#c084fc',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Bot size={14} /> Download Agent Report PDF
           </button>
         </div>
 

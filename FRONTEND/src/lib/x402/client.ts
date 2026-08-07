@@ -315,27 +315,35 @@ export async function requestPaidResource(
 
     if (!response.ok) {
       let errorText = `HTTP Error ${response.status}: ${response.statusText}`;
+      let rawJson: any = null;
       try {
-        const errorJson = await response.clone().json();
-        errorText = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+        rawJson = await response.clone().json();
+        errorText = rawJson.error || rawJson.message || rawJson.details || JSON.stringify(rawJson);
       } catch (e) {
-        // ignore body parse error
+        try {
+          const rawText = await response.clone().text();
+          if (rawText) errorText = rawText;
+        } catch (e2) {}
       }
 
       console.error("[x402 Client] [HOP 3] Server returned non-ok error status:", {
         status: response.status,
+        statusText: response.statusText,
         errorText,
+        rawJson,
       });
+
+      const finalErrorMsg = typeof errorText === 'string' ? errorText : JSON.stringify(errorText);
 
       traceBuilder.addStep(
         "PROVIDER_EXECUTION",
         "Provider API Request Returned Error Status",
-        errorText,
-        { status: response.status },
+        finalErrorMsg,
+        { status: response.status, details: rawJson },
         "error"
       );
-      const trace = traceBuilder.fail(errorText);
-      return { error: errorText, trace };
+      const trace = traceBuilder.fail(finalErrorMsg);
+      return { error: finalErrorMsg, trace };
     }
 
     let resultData: any = null;

@@ -8,6 +8,8 @@ import { receiptRoutes } from "./receipt.routes";
 import { transactionRoutes } from "./transaction.routes";
 import { analyticsRoutes } from "./analytics.routes";
 
+import pdfRoutes from "./pdf.routes";
+
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -18,5 +20,6 @@ router.use("/payments", paymentRoutes);
 router.use("/receipts", receiptRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/analytics", analyticsRoutes);
+router.use("/pdf", pdfRoutes);
 
 export { router as apiRoutes };
