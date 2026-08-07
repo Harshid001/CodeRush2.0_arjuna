@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ShieldCheck, ArrowRight, Sparkles, LogIn } from 'lucide-react';
+import type { MouseEvent } from 'react';
 import Navbar from '@/components/Navbar';
 import ParticleBackground from '@/components/ParticleBackground';
 import { googleAuthBackend } from '@/lib/api';
@@ -324,8 +325,8 @@ export default function LoginPage() {
                     textDecoration: 'none',
                     transition: 'color 0.2s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#00e5ff')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#aaaaaa')}
+                  onMouseEnter={(e: MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = '#00e5ff')}
+                  onMouseLeave={(e: MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.color = '#aaaaaa')}
                 >
                   <span>Skip to Dashboard preview</span>
                   <ArrowRight size={14} />
