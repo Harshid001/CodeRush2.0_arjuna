@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, X, Loader2, ExternalLink, ShieldCheck, Zap,
-  Clock, AlertTriangle, ArrowRight, CornerDownRight, Filter
+  Clock, AlertTriangle, ArrowRight, ChevronDown, ChevronUp,
+  FileText, Store, Server, Key, Lock, CheckCircle2, Copy, RefreshCw, AlertCircle
 } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { useReceipts } from '@/lib/receiptStore';
+import { useProviderStatus } from '@/lib/providerStatus';
 
 export interface TraceEvent {
   id: string;
   timestamp: string;
   provider: string;
   capability: string;
+  qualityScore?: number;
   step402: {
     amount: string;
     token: string;
@@ -36,6 +41,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     timestamp: '2026-08-07 12:24:10',
     provider: 'OpenCore Labs',
     capability: 'GPT-4 Vision Pro Inference',
+    qualityScore: 98.4,
     step402: {
       amount: '$0.0042',
       token: 'USDC',
@@ -58,6 +64,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     timestamp: '2026-08-07 12:22:45',
     provider: 'AudioAI Systems',
     capability: 'Whisper Speech-to-Text',
+    qualityScore: 96.2,
     step402: {
       amount: '$0.0018',
       token: 'USDC',
@@ -80,6 +87,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     timestamp: '2026-08-07 12:21:02',
     provider: 'PixelForge AI',
     capability: 'Stable Diffusion XL Generation',
+    qualityScore: 91.8,
     step402: {
       amount: '$0.0650',
       token: 'USDC',
@@ -102,6 +110,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     timestamp: '2026-08-07 12:18:30',
     provider: 'VectorCore',
     capability: 'EmbedForce v3 Semantic Search',
+    qualityScore: 99.1,
     step402: {
       amount: '$0.0003',
       token: 'USDC',
@@ -129,6 +138,59 @@ interface TraceViewerProps {
 export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling = false }: TraceViewerProps) {
   const [filter, setFilter] = useState<'all' | 'approved' | 'rejected' | 'pending'>('all');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const { address } = useAccount();
+  const { createAndAddReceipt, getReceiptById, receipts } = useReceipts();
+  const { isProviderDown } = useProviderStatus();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeWallet = (mounted && address) ? address : '0x71C83B47c04E923a10F8721102910a9E23';
+
+  // Wire trace events into ReceiptStore with Web Crypto SHA-256
+  useEffect(() => {
+    events.forEach(async (ev) => {
+      const existing = getReceiptById(ev.id);
+      if (!existing && ev.settlement) {
+        const inputPayload = JSON.stringify({
+          provider: ev.provider,
+          capability: ev.capability,
+          requestedAt: ev.step402.requestedAt,
+          terms: ev.step402,
+        });
+
+        const outputPayload = JSON.stringify({
+          status: ev.settlement.status,
+          settledAmount: ev.settlement.settledAmount,
+          policy: ev.policyDecision,
+        });
+
+        const costNum = parseFloat(ev.settlement.settledAmount.replace(/[^0-9.]/g, '')) || 0;
+
+        await createAndAddReceipt({
+          provider: ev.provider,
+          capability: ev.capability,
+          wallet: activeWallet,
+          transactionHash: ev.settlement.txHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+          inputPayload,
+          outputPayload,
+          cost: costNum,
+          status: ev.settlement.status === 'confirmed' ? 'settled' : ev.settlement.status === 'pending' ? 'pending' : 'failed',
+        });
+      }
+    });
+  }, [events, activeWallet]);
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const filteredEvents = events.filter((ev) => {
     if (filter === 'approved' && (!ev.policyDecision.approved || ev.settlement.status === 'failed')) return false;
@@ -139,6 +201,10 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
   });
 
   const providers = Array.from(new Set(events.map((e) => e.provider)));
+
+  const toggleStep = (stepKey: string) => {
+    setExpandedStep((prev) => (prev === stepKey ? null : stepKey));
+  };
 
   return (
     <div style={{ width: '100%' }}>
@@ -159,7 +225,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#666', fontSize: 13, fontFamily: 'Inter', marginRight: 8 }}>
-            <Filter size={14} /> Filter Status:
+            Filter Status:
           </div>
           {(['all', 'approved', 'rejected', 'pending'] as const).map((tab) => (
             <button
@@ -219,394 +285,436 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
       {/* Events List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <AnimatePresence mode="popLayout">
-          {filteredEvents.map((ev, index) => (
-            <motion.div
-              key={ev.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-              style={{
-                borderRadius: 20,
-                overflow: 'hidden',
-                background: 'linear-gradient(155deg, rgba(20,20,24,0.95) 0%, rgba(12,12,14,0.95) 100%)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-              }}
-            >
-              {/* Event Header */}
-              <div
-                style={{
-                  padding: '18px 24px',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 12,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {filteredEvents.map((ev, index) => {
+            const isApproved = ev.policyDecision.approved;
+            const isDown = isProviderDown(ev.provider);
+            const fallbackProvider = isDown ? 'AudioAI Systems (Provider B)' : null;
+
+            const rcpt = receipts.find((r) => r.receiptId === ev.id || r.provider === ev.provider);
+
+            // Steps Definitions (incorporating Provider Down & Fallback)
+            const stepsList = [
+              {
+                num: 1,
+                key: `${ev.id}-step1`,
+                title: 'Step 1: Marketplace Browsing',
+                summary: `Requested capability: ${ev.capability}`,
+                icon: Store,
+                iconColor: '#80a5e5',
+                status: 'done',
+                detail: (
+                  <div>
+                    <div style={{ fontSize: 12, color: '#aaa', marginBottom: 4 }}>Agent Discovery Log</div>
+                    <div style={{ fontSize: 13, color: '#e0e0e0', fontFamily: 'Inter' }}>
+                      Agent initiated API request from Marketplace catalog for capability: <strong style={{ color: '#fff' }}>{ev.capability}</strong>.
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                num: 2,
+                key: `${ev.id}-step2`,
+                title: 'Step 2: Provider Selection',
+                summary: `Selected Provider: ${ev.provider} (${ev.qualityScore || 98.4}% Quality Score)`,
+                icon: Server,
+                iconColor: '#80a5e5',
+                status: 'done',
+                detail: (
+                  <div>
+                    <div style={{ fontSize: 12, color: '#aaa', marginBottom: 4 }}>Routing Rationale</div>
+                    <div style={{ fontSize: 13, color: '#e0e0e0', fontFamily: 'Inter' }}>
+                      Chosen <strong style={{ color: '#fff' }}>{ev.provider}</strong> based on optimal Quality Score ({ev.qualityScore || 98.4}%) and competitive per-request pricing ({ev.step402.amount}).
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                num: 3,
+                key: `${ev.id}-step3`,
+                title: 'Step 3: Policy Engine Decision',
+                summary: isApproved ? `Approved: ${ev.policyDecision.reason}` : `Rejected: ${ev.policyDecision.reason}`,
+                icon: ShieldCheck,
+                iconColor: isApproved ? '#5a9a5a' : '#c83c3c',
+                status: isApproved ? 'done' : 'failed',
+                detail: (
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      padding: '12px 14px',
                       borderRadius: 10,
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      background: isApproved ? 'rgba(74,138,74,0.06)' : 'rgba(180,60,60,0.06)',
+                      border: `1px solid ${isApproved ? 'rgba(74,138,74,0.2)' : 'rgba(180,60,60,0.2)'}`,
                     }}
                   >
-                    <Zap size={16} color="#aaa" />
+                    <div style={{ fontSize: 12, color: isApproved ? '#5a9a5a' : '#c83c3c', fontWeight: 600, marginBottom: 2 }}>
+                      Evaluated Policy Rule: {ev.policyDecision.cap_type}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#ddd' }}>{ev.policyDecision.reason}</div>
                   </div>
+                ),
+              },
+              {
+                num: 4,
+                key: `${ev.id}-step4`,
+                title: 'Step 4: HTTP 402 Payment Required',
+                summary: `Requested Terms: ${ev.step402.amount} ${ev.step402.token} on ${ev.step402.chain}`,
+                icon: Lock,
+                iconColor: '#c8a032',
+                status: isApproved ? 'done' : 'skipped',
+                detail: (
+                  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#666' }}>Amount</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{ev.step402.amount} {ev.step402.token}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#666' }}>Network</div>
+                      <div style={{ fontSize: 13, color: '#ccc' }}>{ev.step402.chain}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#666' }}>Header Requested At</div>
+                      <div style={{ fontSize: 12, color: '#888' }}>{ev.step402.requestedAt}</div>
+                    </div>
+                  </div>
+                ),
+              },
+            ];
+
+            // If Provider A is DOWN, insert Fallback Alert Step
+            if (isDown && isApproved) {
+              stepsList.push({
+                num: 5,
+                key: `${ev.id}-fallback`,
+                title: `⚠ Step 5: ${ev.provider} Unreachable (HTTP 500 Connection Timeout)`,
+                summary: `🔄 Falling back to Provider B: ${fallbackProvider}`,
+                icon: AlertCircle,
+                iconColor: '#c83c3c',
+                status: 'failed',
+                detail: (
+                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(180,60,60,0.1)', border: '1px solid rgba(180,60,60,0.3)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#c83c3c', marginBottom: 4 }}>
+                      Primary Provider Endpoint Timeout (500 Error)
+                    </div>
+                    <div style={{ fontSize: 12, color: '#dddddd', fontFamily: 'Inter' }}>
+                      Primary provider <strong>{ev.provider}</strong> failed to respond within 500ms SLA. Policy Engine automatically rerouted execution to failover provider: <strong style={{ color: '#80a5e5' }}>{fallbackProvider}</strong>. Zero double-charge incurred.
+                    </div>
+                  </div>
+                ),
+              });
+            }
+
+            stepsList.push(
+              {
+                num: isDown ? 6 : 5,
+                key: `${ev.id}-step5`,
+                title: `${isDown ? 'Step 6' : 'Step 5'}: MetaMask Wallet Signature`,
+                summary: `Signed by: ${activeWallet.slice(0, 6)}...${activeWallet.slice(-4)}`,
+                icon: Key,
+                iconColor: '#80a5e5',
+                status: isApproved ? 'done' : 'skipped',
+                detail: (
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontFamily: 'Inter', fontSize: 15, fontWeight: 600, color: '#f0f0f0' }}>
-                        {ev.capability}
-                      </span>
+                    <div style={{ fontSize: 11, color: '#666', marginBottom: 2 }}>Connected Signer Address</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'monospace', fontSize: 12, color: '#e0e0e0' }}>
+                      {activeWallet}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(activeWallet, `${ev.id}-wallet`);
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: 2 }}
+                      >
+                        {copiedKey === `${ev.id}-wallet` ? <Check size={12} color="#5a9a5a" /> : <Copy size={12} />}
+                      </button>
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                num: isDown ? 7 : 6,
+                key: `${ev.id}-step6`,
+                title: `${isDown ? 'Step 7' : 'Step 6'}: Payment Payload Verification`,
+                summary: 'x402 Payment Header & Signature Verified',
+                icon: CheckCircle2,
+                iconColor: '#5a9a5a',
+                status: isApproved ? 'done' : 'skipped',
+                detail: (
+                  <div style={{ fontSize: 13, color: '#ccc' }}>
+                    Cryptographic signature and x402 payment header verified successfully against Base Sepolia contract specifications.
+                  </div>
+                ),
+              },
+              {
+                num: isDown ? 8 : 7,
+                key: `${ev.id}-step7`,
+                title: `${isDown ? 'Step 8' : 'Step 7'}: Provider Execution`,
+                summary: isDown
+                  ? `Status 200 OK — Executed by Fallback ${fallbackProvider} (142ms)`
+                  : 'Status 200 OK — Provider Inference Completed in 142ms',
+                icon: Zap,
+                iconColor: '#5a9a5a',
+                status: isApproved ? 'done' : 'skipped',
+                detail: (
+                  <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.4)', fontFamily: 'monospace', fontSize: 11, color: '#aaa' }}>
+                    {`{"status": 200, "executed_by": "${isDown ? fallbackProvider : ev.provider}", "fallback_active": ${isDown}, "latency_ms": 142}`}
+                  </div>
+                ),
+              },
+              {
+                num: isDown ? 9 : 8,
+                key: `${ev.id}-step8`,
+                title: `${isDown ? 'Step 9' : 'Step 8'}: Verifiable Receipt Logged`,
+                summary: `Receipt ID: ${rcpt?.receiptId || ev.id} · Settled via ${isDown ? fallbackProvider : ev.provider}`,
+                icon: FileText,
+                iconColor: '#5a9a5a',
+                status: isApproved ? 'done' : 'skipped',
+                detail: (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: '#888' }}>Receipt ID:</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#fff' }}>{rcpt?.receiptId || ev.id}</span>
+                    </div>
+                    {isDown && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: '#888' }}>Failover Execution:</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c8a032' }}>{ev.provider} → {fallbackProvider}</span>
+                      </div>
+                    )}
+                    {ev.settlement.txHash && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: '#888' }}>On-chain TX:</span>
+                        <a
+                          href={`https://sepolia.basescan.org/tx/${ev.settlement.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontFamily: 'monospace', fontSize: 12, color: '#80a5e5', display: 'flex', alignItems: 'center', gap: 4 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {ev.settlement.txHash.slice(0, 8)}...{ev.settlement.txHash.slice(-6)} <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ),
+              }
+            );
+
+            return (
+              <motion.div
+                key={ev.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                style={{
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  background: isDown
+                    ? 'linear-gradient(155deg, rgba(30,15,20,0.95) 0%, rgba(16,10,12,0.95) 100%)'
+                    : 'linear-gradient(155deg, rgba(20,20,24,0.95) 0%, rgba(12,12,14,0.95) 100%)',
+                  border: `1px solid ${isDown ? 'rgba(200,60,60,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                }}
+              >
+                {/* Event Header */}
+                <div
+                  style={{
+                    padding: '18px 24px',
+                    background: 'rgba(255,255,255,0.02)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Zap size={16} color="#aaa" />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: 'Inter', fontSize: 15, fontWeight: 600, color: '#f0f0f0' }}>
+                          {ev.capability}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            padding: '2px 8px',
+                            borderRadius: 100,
+                            background: isDown ? 'rgba(180,60,60,0.2)' : 'rgba(255,255,255,0.05)',
+                            color: isDown ? '#c83c3c' : '#888',
+                            border: `1px solid ${isDown ? 'rgba(180,60,60,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                          }}
+                        >
+                          {ev.provider} {isDown ? '(DOWN)' : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#555', marginTop: 2, fontFamily: 'Inter' }}>
+                        <Clock size={11} /> {ev.timestamp} · ID: <span style={{ fontFamily: 'monospace' }}>{ev.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {isDown && isApproved ? (
                       <span
                         style={{
                           fontFamily: 'Inter',
-                          fontSize: 11,
-                          padding: '2px 8px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          padding: '4px 12px',
                           borderRadius: 100,
-                          background: 'rgba(255,255,255,0.05)',
-                          color: '#888',
-                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: 'rgba(200,160,50,0.15)',
+                          color: '#c8a032',
+                          border: '1px solid rgba(200,160,50,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
                         }}
                       >
-                        {ev.provider}
+                        <RefreshCw size={12} className="animate-spin-slow" /> ● Fallback Executed (Provider A → B)
                       </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#555', marginTop: 2, fontFamily: 'Inter' }}>
-                      <Clock size={11} /> {ev.timestamp} · ID: <span style={{ fontFamily: 'monospace' }}>{ev.id}</span>
-                    </div>
+                    ) : (
+                      <span
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          padding: '4px 12px',
+                          borderRadius: 100,
+                          background: isApproved
+                            ? ev.settlement.status === 'confirmed'
+                              ? 'rgba(74,138,74,0.12)'
+                              : 'rgba(200,160,50,0.12)'
+                            : 'rgba(180,60,60,0.12)',
+                          color: isApproved
+                            ? ev.settlement.status === 'confirmed'
+                              ? '#5a9a5a'
+                              : '#c8a032'
+                            : '#c83c3c',
+                          border: `1px solid ${
+                            isApproved
+                              ? ev.settlement.status === 'confirmed'
+                                ? 'rgba(74,138,74,0.25)'
+                                : 'rgba(200,160,50,0.25)'
+                              : 'rgba(180,60,60,0.25)'
+                          }`,
+                        }}
+                      >
+                        {!isApproved
+                          ? '● Policy Rejected'
+                          : ev.settlement.status === 'pending'
+                          ? '● Settling On-chain'
+                          : '● Settled Successfully'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span
-                    style={{
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: '4px 12px',
-                      borderRadius: 100,
-                      background: ev.policyDecision.approved
-                        ? ev.settlement.status === 'confirmed'
-                          ? 'rgba(74,138,74,0.12)'
-                          : 'rgba(200,160,50,0.12)'
-                        : 'rgba(180,60,60,0.12)',
-                      color: ev.policyDecision.approved
-                        ? ev.settlement.status === 'confirmed'
-                          ? '#5a9a5a'
-                          : '#c8a032'
-                        : '#c83c3c',
-                      border: `1px solid ${
-                        ev.policyDecision.approved
-                          ? ev.settlement.status === 'confirmed'
-                            ? 'rgba(74,138,74,0.25)'
-                            : 'rgba(200,160,50,0.25)'
-                          : 'rgba(180,60,60,0.25)'
-                      }`,
-                    }}
-                  >
-                    {!ev.policyDecision.approved
-                      ? '● Policy Rejected'
-                      : ev.settlement.status === 'pending'
-                      ? '● Settling On-chain'
-                      : '● Settled Successfully'}
-                  </span>
-                </div>
-              </div>
+                {/* Collapsible Stepper */}
+                <div style={{ padding: '24px 28px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {stepsList.map((step) => {
+                      const isExpanded = expandedStep === step.key;
+                      const isSkipped = !isApproved && step.num > 3;
+                      const Icon = step.icon;
 
-              {/* Lifecycle Vertical Stepper */}
-              <div style={{ padding: '24px 28px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-
-                  {/* STEP 1: HTTP 402 Payment Required */}
-                  <div style={{ display: 'flex', gap: 18, position: 'relative', paddingBottom: 24 }}>
-                    {/* Connecting Vertical Line */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 28,
-                        left: 15,
-                        bottom: 0,
-                        width: 2,
-                        background: 'rgba(255,255,255,0.08)',
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background: 'rgba(200,160,50,0.15)',
-                        border: '1px solid rgba(200,160,50,0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        zIndex: 2,
-                      }}
-                    >
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#c8a032', fontFamily: 'monospace' }}>402</span>
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0', fontFamily: 'Inter' }}>
-                          Step 1: HTTP 402 Payment Required
-                        </div>
-                        <span style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>{ev.step402.requestedAt}</span>
-                      </div>
-                      <div
-                        style={{
-                          padding: '12px 16px',
-                          borderRadius: 12,
-                          background: 'rgba(255,255,255,0.02)',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 12,
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Requested Payment Terms</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#dddddd', fontFamily: 'Inter', marginTop: 2 }}>
-                            {ev.step402.amount} {ev.step402.token}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 16 }}>
-                          <div>
-                            <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Token</div>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: '#aaa', fontFamily: 'Inter' }}>{ev.step402.token}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Network</div>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: '#aaa', fontFamily: 'Inter' }}>{ev.step402.chain}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* STEP 2: Policy Engine Decision */}
-                  <div style={{ display: 'flex', gap: 18, position: 'relative', paddingBottom: 24 }}>
-                    {/* Connecting Vertical Line */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 28,
-                        left: 15,
-                        bottom: 0,
-                        width: 2,
-                        background: 'rgba(255,255,255,0.08)',
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background: ev.policyDecision.approved ? 'rgba(74,138,74,0.15)' : 'rgba(180,60,60,0.15)',
-                        border: `1px solid ${ev.policyDecision.approved ? 'rgba(74,138,74,0.3)' : 'rgba(180,60,60,0.3)'}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        zIndex: 2,
-                      }}
-                    >
-                      {ev.policyDecision.approved ? (
-                        <ShieldCheck size={16} color="#5a9a5a" />
-                      ) : (
-                        <X size={16} color="#c83c3c" />
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0', fontFamily: 'Inter' }}>
-                          Step 2: Policy Engine Decision
-                        </div>
-                        <span
+                      return (
+                        <div
+                          key={step.key}
                           style={{
-                            fontSize: 11,
-                            fontWeight: 500,
-                            color: ev.policyDecision.approved ? '#5a9a5a' : '#c83c3c',
-                            fontFamily: 'Inter',
+                            borderRadius: 14,
+                            border: `1px solid ${isExpanded ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                            background: isExpanded ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.015)',
+                            overflow: 'hidden',
+                            opacity: isSkipped ? 0.4 : 1,
+                            transition: 'all 0.2s ease',
                           }}
                         >
-                          {ev.policyDecision.approved ? 'Approved' : 'Rejected'}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          padding: '12px 16px',
-                          borderRadius: 12,
-                          background: ev.policyDecision.approved ? 'rgba(74,138,74,0.04)' : 'rgba(180,60,60,0.04)',
-                          border: `1px solid ${ev.policyDecision.approved ? 'rgba(74,138,74,0.12)' : 'rgba(180,60,60,0.12)'}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 12,
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: 11, color: '#666', fontFamily: 'Inter' }}>Evaluated Rule</div>
-                          <div style={{ fontSize: 13, color: '#cccccc', fontFamily: 'Inter', marginTop: 2 }}>
-                            {ev.policyDecision.reason}
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            padding: '3px 9px',
-                            borderRadius: 6,
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#888',
-                            fontFamily: 'Inter',
-                          }}
-                        >
-                          {ev.policyDecision.cap_type}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* STEP 3: On-chain Settlement */}
-                  <div style={{ display: 'flex', gap: 18, position: 'relative' }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background:
-                          ev.settlement.status === 'confirmed'
-                            ? 'rgba(74,138,74,0.15)'
-                            : ev.settlement.status === 'pending'
-                            ? 'rgba(200,160,50,0.15)'
-                            : 'rgba(180,60,60,0.15)',
-                        border: `1px solid ${
-                          ev.settlement.status === 'confirmed'
-                            ? 'rgba(74,138,74,0.3)'
-                            : ev.settlement.status === 'pending'
-                            ? 'rgba(200,160,50,0.3)'
-                            : 'rgba(180,60,60,0.3)'
-                        }`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        zIndex: 2,
-                      }}
-                    >
-                      {ev.settlement.status === 'confirmed' ? (
-                        <Check size={16} color="#5a9a5a" />
-                      ) : ev.settlement.status === 'pending' ? (
-                        <Loader2 size={16} color="#c8a032" className="animate-spin-slow" />
-                      ) : (
-                        <X size={16} color="#c83c3c" />
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0', fontFamily: 'Inter' }}>
-                          Step 3: On-chain Settlement (Base Sepolia)
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 500,
-                            textTransform: 'capitalize',
-                            color:
-                              ev.settlement.status === 'confirmed'
-                                ? '#5a9a5a'
-                                : ev.settlement.status === 'pending'
-                                ? '#c8a032'
-                                : '#c83c3c',
-                            fontFamily: 'Inter',
-                          }}
-                        >
-                          {ev.settlement.status}
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          padding: '12px 16px',
-                          borderRadius: 12,
-                          background: 'rgba(255,255,255,0.02)',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 12,
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Settled Amount</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e0e0e0', fontFamily: 'Inter', marginTop: 2 }}>
-                            {ev.settlement.settledAmount}
-                          </div>
-                        </div>
-
-                        {ev.settlement.txHash ? (
-                          <a
-                            href={`https://sepolia.basescan.org/tx/${ev.settlement.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          {/* Collapsed Step Header */}
+                          <div
+                            onClick={() => !isSkipped && toggleStep(step.key)}
                             style={{
-                              display: 'inline-flex',
+                              padding: '12px 16px',
+                              display: 'flex',
                               alignItems: 'center',
-                              gap: 6,
-                              padding: '8px 14px',
-                              borderRadius: 10,
-                              background: 'rgba(255,255,255,0.05)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              color: '#bbbbbb',
-                              fontSize: 12,
-                              fontFamily: 'monospace',
-                              textDecoration: 'none',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
-                              e.currentTarget.style.color = '#ffffff';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                              e.currentTarget.style.color = '#bbbbbb';
+                              justifyContent: 'space-between',
+                              cursor: isSkipped ? 'not-allowed' : 'pointer',
                             }}
                           >
-                            <span>
-                              {ev.settlement.txHash.slice(0, 8)}...{ev.settlement.txHash.slice(-6)}
-                            </span>
-                            <ExternalLink size={12} color="#888" />
-                          </a>
-                        ) : (
-                          <span style={{ fontSize: 12, color: '#555', fontFamily: 'Inter' }}>No transaction emitted</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: '50%',
+                                  background: isSkipped ? 'rgba(255,255,255,0.03)' : `${step.iconColor}18`,
+                                  border: `1px solid ${isSkipped ? 'rgba(255,255,255,0.08)' : `${step.iconColor}40`}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Icon size={14} color={isSkipped ? '#555' : step.iconColor} />
+                              </div>
 
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: isSkipped ? '#666' : '#f0f0f0', fontFamily: 'Inter' }}>
+                                  {step.title}
+                                </div>
+                                <div style={{ fontSize: 11, color: isSkipped ? '#444' : '#888', fontFamily: 'Inter', marginTop: 1 }}>
+                                  {isSkipped ? 'Skipped (Policy Rejected)' : step.summary}
+                                </div>
+                              </div>
+                            </div>
+
+                            {!isSkipped && (
+                              <button style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Expanded Step Detail Content */}
+                          <AnimatePresence>
+                            {isExpanded && !isSkipped && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                style={{
+                                  padding: '12px 16px 16px 56px',
+                                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                                  background: 'rgba(0,0,0,0.2)',
+                                }}
+                              >
+                                {step.detail}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
 
         {filteredEvents.length === 0 && (

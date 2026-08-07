@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -20,8 +21,9 @@ const USDC_BASE_SEPOLIA = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
-  { label: 'Dashboard',   href: '/dashboard' },
+  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
+  { label: 'Provenance', href: '/provenance' },
 ];
 
 export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
@@ -42,21 +44,23 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const activeAddress = address || demoWalletAddress;
-  const activeIsConnected = isConnected || !!demoWalletAddress;
-  const isWrongNetwork = isConnected && chainId !== baseSepolia.id;
+  useEffect(() => {
+    setMounted(true);
+    const fn = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
 
-  // Wagmi's store can restore a persisted connection synchronously during
-  // hydration, causing a server/client mismatch. Render the server snapshot
-  // until mounted, then reveal the real wallet state.
-  const hydratedConnected = mounted ? activeIsConnected : false;
+  const activeAddress = mounted ? (address || demoWalletAddress) : null;
+  const activeIsConnected = mounted ? (isConnected || !!demoWalletAddress) : false;
+  const isWrongNetwork = mounted && isConnected && chainId !== baseSepolia.id;
 
-  // Fetch real ETH balance on Base Sepolia
+
   const { data: ethBalanceData } = useBalance({
     address: activeAddress as `0x${string}` | undefined,
     chainId: baseSepolia.id,
     query: {
-      enabled: !!activeAddress,
+      enabled: !!activeAddress && mounted,
     },
   });
 
@@ -68,29 +72,23 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
     chainId: baseSepolia.id,
     query: {
-      enabled: !!activeAddress,
+      enabled: !!activeAddress && mounted,
     },
   });
 
   // Formatted balances
   const formattedEth = ethBalanceData
     ? `${(Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals).toFixed(4)} ETH`
-    : isConnected
-    ? '0.0000 ETH'
-    : '0.0450 ETH';
+    : activeIsConnected
+      ? '0.0000 ETH'
+      : '0.0450 ETH';
 
   const formattedUsdc = usdcRawBalance !== undefined
     ? `${(Number(usdcRawBalance) / 1e6).toFixed(2)} USDC`
-    : isConnected
-    ? '0.00 USDC'
-    : '125.50 USDC';
+    : activeIsConnected
+      ? '0.00 USDC'
+      : '125.50 USDC';
 
-  useEffect(() => {
-    setMounted(true);
-    const fn = () => setScrolled(window.scrollY > 24);
-    window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
 
   const handleConnect = async () => {
     // 1. Try Wagmi injected connector
@@ -264,7 +262,18 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
             {/* Wallet Button & Dropdown */}
             <div style={{ position: 'relative' }}>
-              {!hydratedConnected ? (
+              {!mounted ? (
+                <button
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+                    borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)', color: '#bbb',
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                  }}
+                >
+                  <Wallet size={13} /> Connect Wallet
+                </button>
+              ) : !activeIsConnected ? (
                 <button
                   onClick={handleConnect}
                   style={{
@@ -307,7 +316,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
               {/* Wallet Dropdown Menu */}
               <AnimatePresence>
-                {hydratedConnected && dropdownOpen && (
+                {activeIsConnected && dropdownOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -485,7 +494,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   </Link>
                 ))}
 
-                {!hydratedConnected ? (
+                {!mounted || !activeIsConnected ? (
                   <button
                     onClick={() => {
                       handleConnect();

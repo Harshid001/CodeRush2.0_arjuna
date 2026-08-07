@@ -5,6 +5,9 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from '@/lib/wagmi';
 
+import { ReceiptProvider } from '@/lib/receiptStore';
+import { ProviderStatusProvider } from '@/lib/providerStatus';
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -21,7 +24,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <ProviderStatusProvider>
+          <ReceiptProvider>
+            {children}
+          </ReceiptProvider>
+        </ProviderStatusProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
