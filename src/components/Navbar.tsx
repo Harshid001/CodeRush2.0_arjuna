@@ -22,6 +22,7 @@ const links = [
   { label: 'Marketplace', href: '/marketplace' },
   { label: 'Dashboard',   href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
+  { label: 'Provenance',  href: '/provenance' },
 ];
 
 export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {

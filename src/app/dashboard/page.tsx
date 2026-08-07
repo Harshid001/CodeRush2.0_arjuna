@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Activity, DollarSign, Zap, Database, ArrowUpRight, ArrowDownRight, Clock, ExternalLink, User, Settings, LogOut, ChevronRight, Download, FileText } from 'lucide-react';
+import { Activity, DollarSign, Zap, Database, ArrowUpRight, Clock, User, Settings, LogOut, ChevronRight, Download, FileText } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BudgetCaps from '@/components/BudgetCaps';
@@ -54,10 +54,10 @@ export default function Dashboard() {
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 28px' }}>
           <div style={{ display:'flex', gap:28, marginTop:20 }}>
 
-            {/* sidebar */}
+            {/* Sidebar */}
             <motion.aside initial={{ opacity:0, x:-16 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.5 }}
               style={{ width:200, flexShrink:0, display:'flex', flexDirection:'column', gap:4 }} className="hidden lg:flex">
-              {/* profile */}
+              {/* Profile */}
               <div style={{ padding:'16px', borderRadius:16, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', marginBottom:12 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
                   <div style={{ width:34, height:34, borderRadius:10, background:'rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -92,7 +92,7 @@ export default function Dashboard() {
               </div>
             </motion.aside>
 
-            {/* main content */}
+            {/* Main Content */}
             <div style={{ flex:1, minWidth:0 }}>
               <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} style={{ marginBottom:28, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:16 }}>
                 <div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
               {/* Specific Budget Caps (Per-Request, Per-Provider Daily, Global Daily) */}
               <BudgetCaps />
 
-              {/* charts */}
+              {/* Charts */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:24 }} className="grid-cols-1 lg:grid-cols-2">
                 {[
                   { title:'API Requests', sub:'Monthly count', data:reqData, key:'v', grad:'reqG' },
@@ -175,26 +175,31 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* Verified Receipts Section */}
+              {/* Lightweight Recent Receipts Preview (Max 2 entries) */}
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.32 }} style={{ marginBottom: 24 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                   <div>
-                    <h2 style={{ fontFamily:'Inter', fontSize:16, fontWeight:600, color:'#efefef' }}>Verifiable Receipt Log</h2>
-                    <p style={{ fontFamily:'Inter', fontSize:12, color:'#555', marginTop:2 }}>Cryptographically hashed execution receipts (SHA-256 Web Crypto API)</p>
+                    <h2 style={{ fontFamily:'Inter', fontSize:15, fontWeight:600, color:'#efefef' }}>Recent Execution Receipts</h2>
+                    <p style={{ fontFamily:'Inter', fontSize:12, color:'#555', marginTop:2 }}>Showing latest 2 execution receipts</p>
                   </div>
-                  <span style={{ fontFamily:'Inter', fontSize:12, color:'#666', background:'rgba(255,255,255,0.04)', padding:'4px 10px', borderRadius:8, border:'1px solid rgba(255,255,255,0.06)' }}>
-                    {receipts.length} Receipt{receipts.length !== 1 ? 's' : ''}
-                  </span>
+                  <Link
+                    href="/provenance"
+                    style={{
+                      display:'flex', alignItems:'center', gap:5, fontFamily:'Inter', fontSize:12, color:'#80a5e5', textDecoration:'none', fontWeight:500
+                    }}
+                  >
+                    View all in Provenance Store <ArrowUpRight size={13} />
+                  </Link>
                 </div>
 
-                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-                  {receipts.map((rcpt) => (
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  {receipts.slice(0, 2).map((rcpt) => (
                     <ReceiptCard key={rcpt.receiptId} receipt={rcpt} />
                   ))}
                 </div>
               </motion.div>
 
-              {/* active APIs */}
+              {/* Active APIs */}
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.36 }}
                 style={{ padding:'22px 20px', borderRadius:18, background:'rgba(14,14,16,0.95)', border:'1px solid rgba(255,255,255,0.07)', marginBottom:24 }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
@@ -224,12 +229,12 @@ export default function Dashboard() {
                 </div>
               </motion.div>
 
-              {/* transactions */}
+              {/* Transactions */}
               <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.42 }}
                 style={{ borderRadius:18, overflow:'hidden', border:'1px solid rgba(255,255,255,0.07)' }}>
                 <div style={{ padding:'18px 20px', background:'rgba(14,14,16,0.95)', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <h3 style={{ fontFamily:'Inter', fontSize:14, fontWeight:600, color:'#ccc' }}>Recent Transactions</h3>
-                  <span style={{ display:'flex', alignItems:'center', gap:4, fontFamily:'Inter', fontSize:12, color:'#333', cursor:'default' }}>View all <ChevronRight size={11} /></span>
+                  <Link href="/provenance" style={{ display:'flex', alignItems:'center', gap:4, fontFamily:'Inter', fontSize:12, color:'#80a5e5', textDecoration:'none' }}>View all in Provenance Store <ChevronRight size={11} /></Link>
                 </div>
                 <div style={{ background:'rgba(10,10,12,0.95)' }}>
                   {txns.map((tx,i) => (
@@ -248,12 +253,12 @@ export default function Dashboard() {
                       <div style={{ display:'flex', alignItems:'center', gap:16 }}>
                         <span style={{ fontFamily:'Inter', fontSize:12, color:'#2a2a2a' }}>{tx.date}</span>
                         <span style={{ fontFamily:'Inter', fontSize:14, fontWeight:600, color:'#888' }}>{tx.amt}</span>
-                        <ExternalLink size={13} color="#2a2a2a" />
                       </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
+
             </div>
           </div>
         </div>

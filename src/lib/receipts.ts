@@ -1,11 +1,14 @@
 export interface Receipt {
   receiptId: string;
   provider: string;
+  providerVersion?: string;
   capability?: string;
   wallet: string;
   transactionHash: string;
   inputHash: string;
   outputHash: string;
+  inputPayload?: string;
+  outputPayload?: string;
   timestamp: string;
   cost: number;
   status: "settled" | "pending" | "failed";
