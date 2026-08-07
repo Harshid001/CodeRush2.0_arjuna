@@ -1,0 +1,37 @@
+import mongoose, { Schema, Document } from "mongoose";
+import crypto from "node:crypto";
+
+function genId(prefix: string) {
+  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
+}
+
+export interface IUser {
+  _id: string;
+  email: string;
+  passwordHash: string;
+  name: string;
+  avatarUrl?: string;
+  role: "developer" | "provider" | "admin";
+  walletAddress?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const UserSchema = new Schema<IUser>(
+  {
+    _id: { type: String, default: () => genId("usr") },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    avatarUrl: { type: String },
+    role: { type: String, enum: ["developer", "provider", "admin"], default: "developer" },
+    walletAddress: { type: String, trim: true },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+UserSchema.index({ role: 1 });
+
+export const User = mongoose.model<IUser>("User", UserSchema);
