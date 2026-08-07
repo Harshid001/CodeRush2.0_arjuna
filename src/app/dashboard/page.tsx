@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity, DollarSign, Zap, Database, ArrowUpRight, ArrowDownRight, Clock, ExternalLink, User, Settings, LogOut, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BudgetCaps from '@/components/BudgetCaps';
 
 const reqData    = [{ m:'Jan',v:12000},{m:'Feb',v:18000},{m:'Mar',v:15000},{m:'Apr',v:22000},{m:'May',v:28000},{m:'Jun',v:24000},{m:'Jul',v:35000},{m:'Aug',v:42000}];
 const spendData  = [{ m:'Jan',v:48},{m:'Feb',v:72},{m:'Mar',v:61},{m:'Apr',v:88},{m:'May',v:115},{m:'Jun',v:98},{m:'Jul',v:142},{m:'Aug',v:167}];
@@ -100,25 +101,8 @@ export default function Dashboard() {
                 <p style={{ fontFamily:'Inter', fontSize:13, color:'#444' }}>Welcome back, Alex · Updated just now</p>
               </motion.div>
 
-              {/* stat cards */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }} className="grid-cols-2 xl:grid-cols-4">
-                {statCards.map((s,i) => (
-                  <motion.div key={s.label} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.4, delay:i*0.06 }}
-                    className="card-hover"
-                    style={{ padding:'22px 20px', borderRadius:18, background:'linear-gradient(145deg, rgba(20,20,24,0.95) 0%, rgba(12,12,14,0.95) 100%)', border:'1px solid rgba(255,255,255,0.07)' }}>
-                    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16 }}>
-                      <div style={{ width:36, height:36, borderRadius:11, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                        <s.icon size={16} color="#888" />
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', gap:3, fontFamily:'Inter', fontSize:11, fontWeight:600, color: s.up ? '#4a8a4a' : '#8a5050' }}>
-                        {s.up ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />} {s.trend}
-                      </div>
-                    </div>
-                    <div style={{ fontFamily:'Inter', fontSize:22, fontWeight:700, color:'#e8e8e8', letterSpacing:'-0.03em', marginBottom:4 }}>{s.value}</div>
-                    <div style={{ fontFamily:'Inter', fontSize:12, color:'#444' }}>{s.label}</div>
-                  </motion.div>
-                ))}
-              </div>
+              {/* Specific Budget Caps (Per-Request, Per-Provider Daily, Global Daily) */}
+              <BudgetCaps />
 
               {/* charts */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }} className="grid-cols-1 lg:grid-cols-2">

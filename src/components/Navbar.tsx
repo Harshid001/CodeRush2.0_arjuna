@@ -6,10 +6,8 @@ import { Search, Wallet, User, Menu, X, Zap } from 'lucide-react';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
-  { label: 'Providers',   href: '/dashboard/provider' },
-  { label: 'Pricing',     href: '#pricing' },
-  { label: 'Docs',        href: '#' },
-  { label: 'Resources',   href: '#' },
+  { label: 'Dashboard',   href: '/dashboard' },
+  { label: 'Trace Viewer', href: '/trace' },
 ];
 
 export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
