@@ -2,9 +2,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, AlertTriangle, RefreshCw } from 'lucide-react';
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
+import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, AlertTriangle, RefreshCw, Coins } from 'lucide-react';
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useBalance, useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+] as const;
+
+const USDC_BASE_SEPOLIA = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
@@ -31,8 +43,41 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
   const activeAddress = address || demoWalletAddress;
   const activeIsConnected = isConnected || !!demoWalletAddress;
-
   const isWrongNetwork = isConnected && chainId !== baseSepolia.id;
+
+  // Fetch real ETH balance on Base Sepolia
+  const { data: ethBalanceData } = useBalance({
+    address: activeAddress as `0x${string}` | undefined,
+    chainId: baseSepolia.id,
+    query: {
+      enabled: !!activeAddress,
+    },
+  });
+
+  // Fetch real USDC balance (6 decimals) on Base Sepolia
+  const { data: usdcRawBalance } = useReadContract({
+    address: USDC_BASE_SEPOLIA,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
+    chainId: baseSepolia.id,
+    query: {
+      enabled: !!activeAddress,
+    },
+  });
+
+  // Formatted balances
+  const formattedEth = ethBalanceData
+    ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
+    : isConnected
+    ? '0.0000 ETH'
+    : '0.0450 ETH';
+
+  const formattedUsdc = usdcRawBalance !== undefined
+    ? `${(Number(usdcRawBalance) / 1e6).toFixed(2)} USDC`
+    : isConnected
+    ? '0.00 USDC'
+    : '125.50 USDC';
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24);
@@ -265,7 +310,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                       position: 'absolute',
                       top: 'calc(100% + 10px)',
                       right: 0,
-                      width: 260,
+                      width: 270,
                       borderRadius: 16,
                       overflow: 'hidden',
                       background: '#101012',
@@ -276,7 +321,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                     }}
                   >
                     {/* Full Address & Copy */}
-                    <div style={{ marginBottom: 14 }}>
+                    <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
                         Connected Account
                       </div>
@@ -316,7 +361,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                     </div>
 
                     {/* Network Status */}
-                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
                         Network Status
                       </div>
@@ -349,6 +394,21 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                             Switch
                           </button>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Wallet Balances Section (ETH & USDC) */}
+                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 8 }}>
+                        <Coins size={12} /> Base Sepolia Balances
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>ETH Balance</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0', fontFamily: 'monospace' }}>{formattedEth}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>USDC Balance</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#5a9a5a', fontFamily: 'monospace' }}>{formattedUsdc}</span>
                       </div>
                     </div>
 
