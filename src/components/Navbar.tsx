@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Wallet, User, Menu, X, Zap } from 'lucide-react';
+import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, AlertTriangle, RefreshCw } from 'lucide-react';
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
@@ -14,6 +16,23 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Fallback demo wallet state when no browser extension is detected
+  const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
+
+  // Wagmi hooks
+  const { address, isConnected } = useAccount();
+  const { connectors, connect } = useConnect();
+  const { disconnect } = useDisconnect();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+
+  const activeAddress = address || demoWalletAddress;
+  const activeIsConnected = isConnected || !!demoWalletAddress;
+
+  const isWrongNetwork = isConnected && chainId !== baseSepolia.id;
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24);
@@ -21,15 +40,122 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  const handleConnect = async () => {
+    // 1. Try Wagmi injected connector
+    if (connectors && connectors.length > 0) {
+      try {
+        const injectedConn = connectors.find(
+          (c) => c.id === 'injected' || c.name.toLowerCase().includes('metamask')
+        ) || connectors[0];
+
+        if (injectedConn) {
+          connect({ connector: injectedConn });
+          return;
+        }
+      } catch (e) {
+        console.warn('Wagmi connection attempt error:', e);
+      }
+    }
+
+    // 2. Direct window.ethereum fallback if extension present
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      try {
+        const accounts = await (window as any).ethereum.request({
+          method: 'eth_requestAccounts',
+        });
+        if (accounts && accounts[0]) {
+          setDemoWalletAddress(accounts[0]);
+          return;
+        }
+      } catch (e) {
+        console.warn('Direct ethereum request error:', e);
+      }
+    }
+
+    // 3. Demo wallet fallback if no Web3 wallet extension is installed
+    setDemoWalletAddress('0x71C83B47c04E923a10F8721102910a9E23');
+  };
+
+  const handleDisconnect = () => {
+    if (isConnected) disconnect();
+    setDemoWalletAddress(null);
+    setDropdownOpen(false);
+  };
+
+  const handleCopyAddress = () => {
+    if (activeAddress) {
+      navigator.clipboard.writeText(activeAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const truncatedAddress = activeAddress
+    ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
+    : '';
+
   return (
     <>
+      {/* Network Warning Banner */}
+      {isWrongNetwork && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 110,
+            background: 'rgba(180, 60, 60, 0.95)',
+            backdropFilter: 'blur(12px)',
+            color: '#ffffff',
+            padding: '8px 24px',
+            fontSize: 12,
+            fontFamily: 'Inter',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            boxShadow: '0 4px 20px rgba(180,60,60,0.3)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={14} />
+            <span>Wrong Network: Please switch to Base Sepolia (Chain ID 84532) to transact.</span>
+          </div>
+          <button
+            onClick={() => switchChain?.({ chainId: baseSepolia.id })}
+            style={{
+              background: '#ffffff',
+              color: '#050505',
+              border: 'none',
+              borderRadius: 6,
+              padding: '3px 10px',
+              fontSize: 11,
+              fontFamily: 'Inter',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <RefreshCw size={11} /> Switch Network
+          </button>
+        </div>
+      )}
+
       <motion.nav
         initial={{ y: -24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-          transition: 'background 0.4s, backdrop-filter 0.4s, border-color 0.4s',
+          position: 'fixed',
+          top: isWrongNetwork ? 34 : 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          transition: 'background 0.4s, backdrop-filter 0.4s, border-color 0.4s, top 0.3s',
           background: scrolled ? 'rgba(5,5,5,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(28px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(28px)' : 'none',
@@ -84,18 +210,177 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
               <Search size={15} />
             </button>
 
-            <button style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-              borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)', color: '#bbb',
-              fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
-            >
-              <Wallet size={13} /> Connect Wallet
-            </button>
+            {/* Wallet Button & Dropdown */}
+            <div style={{ position: 'relative' }}>
+              {!activeIsConnected ? (
+                <button
+                  onClick={handleConnect}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+                    borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)', color: '#bbb',
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
+                >
+                  <Wallet size={13} /> Connect Wallet
+                </button>
+              ) : (
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                    borderRadius: 11,
+                    border: `1px solid ${isWrongNetwork ? 'rgba(180,60,60,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                    background: isWrongNetwork ? 'rgba(180,60,60,0.1)' : 'rgba(255,255,255,0.06)',
+                    color: isWrongNetwork ? '#c83c3c' : '#f0f0f0',
+                    fontFamily: 'monospace', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: isWrongNetwork ? '#c83c3c' : '#5a9a5a',
+                      boxShadow: `0 0 6px ${isWrongNetwork ? '#c83c3c' : '#5a9a5a'}`,
+                    }}
+                  />
+                  <span>{truncatedAddress}</span>
+                </button>
+              )}
+
+              {/* Wallet Dropdown Menu */}
+              <AnimatePresence>
+                {activeIsConnected && dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 10px)',
+                      right: 0,
+                      width: 260,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      background: '#101012',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      boxShadow: '0 24px 48px rgba(0,0,0,0.7)',
+                      padding: 16,
+                      zIndex: 120,
+                    }}
+                  >
+                    {/* Full Address & Copy */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
+                        Connected Account
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                          color: '#cccccc',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeAddress}</span>
+                        <button
+                          onClick={handleCopyAddress}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#777777',
+                            cursor: 'pointer',
+                            padding: 2,
+                            marginLeft: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                          title="Copy Address"
+                        >
+                          {copied ? <Check size={12} color="#5a9a5a" /> : <Copy size={12} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Network Status */}
+                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
+                        Network Status
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter', color: isWrongNetwork ? '#c83c3c' : '#5a9a5a' }}>
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: isWrongNetwork ? '#c83c3c' : '#5a9a5a',
+                            }}
+                          />
+                          {isWrongNetwork ? 'Wrong Network' : 'Base Sepolia'}
+                        </div>
+                        {isWrongNetwork && (
+                          <button
+                            onClick={() => switchChain?.({ chainId: baseSepolia.id })}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              background: 'rgba(180,60,60,0.2)',
+                              border: '1px solid rgba(180,60,60,0.3)',
+                              color: '#ffffff',
+                              fontSize: 10,
+                              fontFamily: 'Inter',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Switch
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Disconnect */}
+                    <button
+                      onClick={handleDisconnect}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        padding: '9px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.04)',
+                        color: '#c83c3c',
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(180,60,60,0.15)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                    >
+                      <LogOut size={13} /> Disconnect Wallet
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <Link href="/dashboard">
               <div style={{
@@ -132,13 +417,36 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                     {l.label}
                   </Link>
                 ))}
-                <button style={{
-                  marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  padding: '13px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)', color: '#ccc', fontFamily: 'Inter', fontSize: 14, cursor: 'pointer',
-                }}>
-                  <Wallet size={14} /> Connect Wallet
-                </button>
+
+                {!activeIsConnected ? (
+                  <button
+                    onClick={() => {
+                      handleConnect();
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '13px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.05)', color: '#ccc', fontFamily: 'Inter', fontSize: 14, cursor: 'pointer',
+                    }}
+                  >
+                    <Wallet size={14} /> Connect Wallet
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleDisconnect();
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      padding: '13px', borderRadius: 12, border: '1px solid rgba(180,60,60,0.3)',
+                      background: 'rgba(180,60,60,0.1)', color: '#c83c3c', fontFamily: 'Inter', fontSize: 14, cursor: 'pointer',
+                    }}
+                  >
+                    <LogOut size={14} /> Disconnect ({truncatedAddress})
+                  </button>
+                )}
               </div>
             </motion.div>
           )}
