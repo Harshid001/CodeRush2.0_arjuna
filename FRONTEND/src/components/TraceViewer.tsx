@@ -7,7 +7,7 @@ import {
   Clock, AlertTriangle, ArrowRight, ChevronDown, ChevronUp,
   FileText, Store, Server, Key, Lock, CheckCircle2, Copy, RefreshCw, AlertCircle
 } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import { useWallet } from '@txnlab/use-wallet-react';
 import { useReceipts } from '@/lib/receiptStore';
 import { useProviderStatus } from '@/lib/providerStatus';
 
@@ -45,7 +45,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     step402: {
       amount: '$0.0042',
       token: 'USDC',
-      chain: 'Base Sepolia',
+      chain: 'Algorand TestNet',
       requestedAt: '12:24:10.102',
     },
     policyDecision: {
@@ -68,7 +68,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     step402: {
       amount: '$0.0018',
       token: 'USDC',
-      chain: 'Base Sepolia',
+      chain: 'Algorand TestNet',
       requestedAt: '12:22:45.012',
     },
     policyDecision: {
@@ -91,7 +91,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     step402: {
       amount: '$0.0650',
       token: 'USDC',
-      chain: 'Base Sepolia',
+      chain: 'Algorand TestNet',
       requestedAt: '12:21:02.441',
     },
     policyDecision: {
@@ -114,7 +114,7 @@ export const INITIAL_TRACE_EVENTS: TraceEvent[] = [
     step402: {
       amount: '$0.0003',
       token: 'USDC',
-      chain: 'Base Sepolia',
+      chain: 'Algorand TestNet',
       requestedAt: '12:18:30.890',
     },
     policyDecision: {
@@ -142,7 +142,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const { address } = useAccount();
+  const { activeAddress: algoAddress } = useWallet();
   const { createAndAddReceipt, getReceiptById, receipts } = useReceipts();
   const { isProviderDown } = useProviderStatus();
 
@@ -150,7 +150,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
     setMounted(true);
   }, []);
 
-  const activeWallet = (mounted && address) ? address : '0x71C83B47c04E923a10F8721102910a9E23';
+  const activeWallet = (mounted && algoAddress) ? algoAddress : 'NP6R27ETK85JALGO92KTESTNETSERVICENODEKEY10294857KYST6LO';
 
   // Wire trace events into ReceiptStore with Web Crypto SHA-256
   useEffect(() => {
@@ -406,14 +406,14 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
               {
                 num: isDown ? 6 : 5,
                 key: `${ev.id}-step5`,
-                title: `${isDown ? 'Step 6' : 'Step 5'}: MetaMask Wallet Signature`,
-                summary: `Signed by: ${activeWallet.slice(0, 6)}...${activeWallet.slice(-4)}`,
+                title: `${isDown ? 'Step 6' : 'Step 5'}: Lute Wallet Signature`,
+                summary: `Signed by: ${activeWallet.slice(0, 8)}...${activeWallet.slice(-7)}`,
                 icon: Key,
                 iconColor: '#80a5e5',
                 status: isApproved ? 'done' : 'skipped',
                 detail: (
                   <div>
-                    <div style={{ fontSize: 11, color: '#666', marginBottom: 2 }}>Connected Signer Address</div>
+                    <div style={{ fontSize: 11, color: '#666', marginBottom: 2 }}>Connected Algorand Signer Address</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'monospace', fontSize: 12, color: '#e0e0e0' }}>
                       {activeWallet}
                       <button
@@ -439,7 +439,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                 status: isApproved ? 'done' : 'skipped',
                 detail: (
                   <div style={{ fontSize: 13, color: '#ccc' }}>
-                    Cryptographic signature and x402 payment header verified successfully against Base Sepolia contract specifications.
+                    Cryptographic signature and x402 payment header verified successfully against Algorand TestNet AVM specifications.
                   </div>
                 ),
               },
@@ -483,7 +483,7 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 12, color: '#888' }}>On-chain TX:</span>
                         <a
-                          href={`https://sepolia.basescan.org/tx/${ev.settlement.txHash}`}
+                          href={`https://lora.algokit.io/testnet/transaction/${ev.settlement.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ fontFamily: 'monospace', fontSize: 12, color: '#80a5e5', display: 'flex', alignItems: 'center', gap: 4 }}

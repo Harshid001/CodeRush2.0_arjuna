@@ -239,8 +239,8 @@ export default function Home() {
                   fontFamily: 'Inter', fontWeight: 600, fontSize: 14, textDecoration: 'none',
                   boxShadow: '0 4px 24px rgba(255,255,255,0.12)', transition: 'all 0.25s ease',
                 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
                 >
                   Explore Marketplace <ArrowRight size={15} />
                 </Link>
@@ -252,8 +252,8 @@ export default function Home() {
                   color: '#999', fontFamily: 'Inter', fontWeight: 500, fontSize: 14, textDecoration: 'none',
                   transition: 'all 0.25s ease',
                 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLAnchorElement).style.color = '#e0e0e0'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#999'; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLAnchorElement).style.color = '#e0e0e0'; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#999'; }}
                 >
                   View Dashboard
                 </Link>
@@ -396,8 +396,8 @@ export default function Home() {
                 fontFamily: 'Inter', fontWeight: 600, fontSize: 15, textDecoration: 'none',
                 boxShadow: '0 4px 24px rgba(255,255,255,0.14)', transition: 'all 0.25s ease',
               }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)'; }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)'; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)'; }}
               >
                 Browse Marketplace <ArrowRight size={16} />
               </Link>

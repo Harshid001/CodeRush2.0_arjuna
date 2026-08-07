@@ -377,10 +377,10 @@ export default function ProvenanceViewer() {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Base Sepolia Transaction</div>
+                  <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter' }}>Algorand TestNet Transaction</div>
                   {selectedReceipt.transactionHash ? (
                     <a
-                      href={`https://sepolia.basescan.org/tx/${selectedReceipt.transactionHash}`}
+                      href={`https://lora.algokit.io/testnet/transaction/${selectedReceipt.transactionHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ fontSize: 11, fontFamily: 'monospace', color: '#80a5e5', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}

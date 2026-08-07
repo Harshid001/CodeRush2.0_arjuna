@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix FRONTEND run dev",
-    "build": "npm --prefix FRONTEND run build",
-    "start": "npm --prefix FRONTEND run start",
-    "dev:backend": "npm --prefix BACKEND run dev",
-    "dev:all": "concurrently \"npm --prefix FRONTEND run dev\" \"npm --prefix BACKEND run dev\""
+    "dev:frontend": "cd FRONTEND && npm run dev",
+    "dev:backend": "cd BACKEND && npm run dev",
+    "dev": "npm run dev:frontend",
+    "build:frontend": "cd FRONTEND && npm run build",
+    "build:backend": "cd BACKEND && npm run build",
+    "build": "npm run build:frontend",
+    "start:frontend": "cd FRONTEND && npm run start",
+    "start:backend": "cd BACKEND && npm run start",
+    "start": "npm run start:frontend"
   }
 }

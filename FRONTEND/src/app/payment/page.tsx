@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { apis } from '@/lib/data/marketplaceApis';
-import { useAccount } from 'wagmi';
+import { useWallet } from '@txnlab/use-wallet-react';
 import { formatCurrency } from '@/lib/utils';
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -31,7 +31,8 @@ function computeOverallScore(api: any): number {
 function PaymentCheckoutInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { address: connectedAddress, isConnected } = useAccount();
+    const { activeAddress: connectedAddress } = useWallet();
+    const isConnected = !!connectedAddress;
 
     const providerId = searchParams.get('providerId');
     const api = apis.find(a => a.id === providerId) || apis[0];
