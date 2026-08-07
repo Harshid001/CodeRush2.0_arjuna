@@ -42,7 +42,7 @@ function MockDashboard() {
         {/* titlebar */}
         <div style={{ padding: '13px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {['#ff5f57','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: 0.65 }} />)}
+            {['#ff5f57', '#ffbd2e', '#27c93f'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: 0.65 }} />)}
           </div>
           <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#444' }}>API Analytics · Live</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, background: 'rgba(50,120,50,0.12)', border: '1px solid rgba(50,120,50,0.2)' }}>
@@ -53,7 +53,7 @@ function MockDashboard() {
 
         {/* stat row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
-          {[{ l:'Requests', v:'2.4M', t:'+12%' }, { l:'Revenue', v:'$48.2K', t:'+8%' }, { l:'Uptime', v:'99.9%', t:'↑' }].map(s => (
+          {[{ l: 'Requests', v: '2.4M', t: '+12%' }, { l: 'Revenue', v: '$48.2K', t: '+8%' }, { l: 'Uptime', v: '99.9%', t: '↑' }].map(s => (
             <div key={s.l} style={{ padding: '14px 16px', background: 'rgba(12,12,14,0.97)' }}>
               <div style={{ fontFamily: 'Inter', fontSize: 10, color: '#3a3a3a', marginBottom: 4 }}>{s.l}</div>
               <div style={{ fontFamily: 'Inter', fontSize: 15, fontWeight: 600, color: '#e0e0e0', letterSpacing: '-0.02em' }}>{s.v}</div>
@@ -82,9 +82,9 @@ function MockDashboard() {
         {/* api list */}
         <div style={{ padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            { n:'Vision Pro API', p:'OpenCore',   r:'480K' },
-            { n:'Whisper STT',    p:'AudioAI',    r:'210K' },
-            { n:'DataStream ML',  p:'NexusDB',    r:'890K' },
+            { n: 'Vision Pro API', p: 'OpenCore', r: '480K' },
+            { n: 'Whisper STT', p: 'AudioAI', r: '210K' },
+            { n: 'DataStream ML', p: 'NexusDB', r: '890K' },
           ].map(a => (
             <div key={a.n} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -110,7 +110,7 @@ function MockDashboard() {
       </div>
 
       {/* floating badge top-right */}
-      <motion.div animate={{ y: [0,-6,0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+      <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
         style={{
           position: 'absolute', top: 40, right: -52,
           padding: '10px 14px', borderRadius: 14,
@@ -125,7 +125,7 @@ function MockDashboard() {
       </motion.div>
 
       {/* floating badge bottom-left */}
-      <motion.div animate={{ y: [0,5,0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+      <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
         style={{
           position: 'absolute', bottom: 60, left: -48,
           padding: '10px 14px', borderRadius: 14,
@@ -145,12 +145,12 @@ function MockDashboard() {
 
 /* ─── Feature cards ────────────────────────────────────────────────────── */
 const feats = [
-  { icon: Globe,    title: 'Universal Discovery',   desc: 'Browse 12,000+ verified AI and data APIs across every domain — LLMs, vision, audio, specialized data, and more.' },
-  { icon: Shield,   title: 'Trust & Verification',  desc: 'Every provider is vetted. Smart contracts ensure atomic payments with zero counterparty risk or hidden fees.' },
-  { icon: Zap,      title: 'Pay-Per-Request',       desc: 'Granular usage billing at the request level. Pay for exactly what you consume — real-time metering, instant settlement.' },
-  { icon: Code2,    title: 'Unified SDK',            desc: 'One SDK across all APIs. Consistent auth, error handling, and typed responses. Zero vendor lock-in, ever.' },
-  { icon: BarChart3,'title': 'Usage Analytics',     desc: 'Deep cost optimization insights, latency patterns, request breakdowns, and trend analysis across your entire stack.' },
-  { icon: Lock,     title: 'On-Chain Receipts',     desc: 'Immutable blockchain receipts for every transaction. Full audit trail, tax compliance, and verifiable payment history.' },
+  { icon: Globe, title: 'Universal Discovery', desc: 'Browse 12,000+ verified AI and data APIs across every domain — LLMs, vision, audio, specialized data, and more.' },
+  { icon: Shield, title: 'Trust & Verification', desc: 'Every provider is vetted. Smart contracts ensure atomic payments with zero counterparty risk or hidden fees.' },
+  { icon: Zap, title: 'Pay-Per-Request', desc: 'Granular usage billing at the request level. Pay for exactly what you consume — real-time metering, instant settlement.' },
+  { icon: Code2, title: 'Unified SDK', desc: 'One SDK across all APIs. Consistent auth, error handling, and typed responses. Zero vendor lock-in, ever.' },
+  { icon: BarChart3, 'title': 'Usage Analytics', desc: 'Deep cost optimization insights, latency patterns, request breakdowns, and trend analysis across your entire stack.' },
+  { icon: Lock, title: 'On-Chain Receipts', desc: 'Immutable blockchain receipts for every transaction. Full audit trail, tax compliance, and verifiable payment history.' },
 ];
 
 /* ─── Testimonials ─────────────────────────────────────────────────────── */
@@ -165,7 +165,7 @@ export default function Home() {
   const fadeUp = (delay = 0) => ({
     initial: { opacity: 0, y: 28 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   });
 
   return (
@@ -275,9 +275,9 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }} className="grid-cols-2 lg:grid-cols-4">
             {[
               { val: '12,000+', lbl: 'Active APIs' },
-              { val: '$14.2M+',  lbl: 'Volume Settled' },
-              { val: '99.99%',   lbl: 'Network Uptime' },
-              { val: '<18ms',    lbl: 'Avg Response' },
+              { val: '$14.2M+', lbl: 'Volume Settled' },
+              { val: '99.99%', lbl: 'Network Uptime' },
+              { val: '<18ms', lbl: 'Avg Response' },
             ].map((st, i) => (
               <motion.div key={st.lbl} {...fadeUp(i * 0.08)} style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontWeight: 600, color: '#f0f0f0', letterSpacing: '-0.03em', marginBottom: 4 }}>

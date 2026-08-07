@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -20,9 +21,9 @@ const USDC_BASE_SEPOLIA = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
-  { label: 'Dashboard',   href: '/dashboard' },
+  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
-  { label: 'Provenance',  href: '/provenance' },
+  { label: 'Provenance', href: '/provenance' },
 ];
 
 export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
@@ -54,7 +55,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const activeIsConnected = mounted ? (isConnected || !!demoWalletAddress) : false;
   const isWrongNetwork = mounted && isConnected && chainId !== baseSepolia.id;
 
-  // Fetch real ETH balance on Base Sepolia
+
   const { data: ethBalanceData } = useBalance({
     address: activeAddress as `0x${string}` | undefined,
     chainId: baseSepolia.id,
@@ -77,16 +78,17 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
   // Formatted balances
   const formattedEth = ethBalanceData
-    ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
+    ? `${(Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals).toFixed(4)} ETH`
     : activeIsConnected
-    ? '0.0000 ETH'
-    : '0.0450 ETH';
+      ? '0.0000 ETH'
+      : '0.0450 ETH';
 
   const formattedUsdc = usdcRawBalance !== undefined
     ? `${(Number(usdcRawBalance) / 1e6).toFixed(2)} USDC`
     : activeIsConnected
-    ? '0.00 USDC'
-    : '125.50 USDC';
+      ? '0.00 USDC'
+      : '125.50 USDC';
+
 
   const handleConnect = async () => {
     // 1. Try Wagmi injected connector
