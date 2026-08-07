@@ -124,45 +124,135 @@ export default function LoginPage() {
         strategy="afterInteractive"
         onLoad={initGsi}
       />
-      <div className="relative min-h-screen bg-[#070709] text-white flex flex-col justify-between font-sans selection:bg-cyan-500/20 selection:text-cyan-300 overflow-x-hidden">
+      <div
+        style={{
+          position: 'relative',
+          minHeight: '100vh',
+          backgroundColor: '#050508',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          overflowX: 'hidden',
+        }}
+      >
         <ParticleBackground />
         <Navbar />
 
-        <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-24 sm:px-6 lg:px-8">
+        <main
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '120px 16px 64px',
+          }}
+        >
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full max-w-md"
+            style={{ width: '100%', maxWidth: 440 }}
           >
-            <div className="relative rounded-2xl bg-[#0f0f14]/80 border border-white/10 p-8 shadow-2xl backdrop-blur-xl hover:border-white/15 transition-all duration-300">
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-500/30 shadow-lg backdrop-blur-md">
-                <LogIn className="w-8 h-8 text-cyan-400" />
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: 24,
+                backgroundColor: 'rgba(15, 15, 20, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                padding: '40px 32px 36px',
+                boxShadow: '0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 210, 255, 0.05)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: -28,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 56,
+                  height: 56,
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(168, 85, 247, 0.2))',
+                  border: '1px solid rgba(0, 210, 255, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 12px 30px rgba(0, 210, 255, 0.25)',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                <LogIn size={26} color="#00e5ff" />
               </div>
 
-              <div className="mt-4 text-center space-y-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium">
-                  <Sparkles className="w-3.5 h-3.5" />
+              <div style={{ marginTop: 12, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+                    border: '1px solid rgba(0, 229, 255, 0.25)',
+                    color: '#00e5ff',
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  <Sparkles size={13} color="#00e5ff" />
                   <span>x402 Unified Identity</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+
+                <h1
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: '#ffffff',
+                    margin: 0,
+                  }}
+                >
                   Welcome to x402
                 </h1>
-                <p className="text-sm text-gray-400">
+
+                <p style={{ fontSize: 13, color: '#888899', margin: 0, lineHeight: 1.5, maxWidth: 340 }}>
                   Authenticate with Google to access your developer portal & budget controls.
                 </p>
               </div>
 
-              <div className="mt-8 space-y-6">
-                <div className="flex justify-center flex-col items-center min-h-[44px]">
-                  <div ref={googleButtonRef} className="flex justify-center w-full" />
+              <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 48, justifyContent: 'center' }}>
+                  <div ref={googleButtonRef} style={{ display: 'flex', justifyContent: 'center', width: '100%' }} />
                   {!gsiLoaded && (
                     <button
                       onClick={handleCustomButtonClick}
                       disabled={loading}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium text-sm hover:bg-white/10 hover:border-white/20 transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 12,
+                        padding: '14px 20px',
+                        borderRadius: 14,
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        color: '#ffffff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <svg width="20" height="20" viewBox="0 0 24 24">
                         <path
                           fill="#4285F4"
                           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -185,32 +275,60 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: '100%', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
                   </div>
-                  <div className="relative px-3 bg-[#0f0f14] text-xs text-gray-500 uppercase tracking-wider">
+                  <div
+                    style={{
+                      position: 'relative',
+                      padding: '0 12px',
+                      backgroundColor: '#0f0f14',
+                      fontSize: 11,
+                      color: '#666677',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      fontWeight: 600,
+                    }}
+                  >
                     Secured by JWT & OAuth 2.0
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-white/[0.02] border border-white/5 p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                    <div className="text-xs text-gray-400 leading-relaxed">
+                <div
+                  style={{
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <ShieldCheck size={18} color="#00e5ff" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <div style={{ fontSize: 12, color: '#9999aa', lineHeight: 1.5 }}>
                       Your identity token is verified server-side with Google OIDC endpoints, issuing a 7-day signed JWT for backend access.
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 text-center">
+              <div style={{ marginTop: 28, textAlign: 'center' }}>
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-cyan-400 transition-colors"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    color: '#aaaaaa',
+                    textDecoration: 'none',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#00e5ff')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#aaaaaa')}
                 >
                   <span>Skip to Dashboard preview</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
