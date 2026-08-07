@@ -7,6 +7,8 @@ import { config } from '@/lib/wagmi';
 
 import { ReceiptProvider } from '@/lib/receiptStore';
 import { ProviderStatusProvider } from '@/lib/providerStatus';
+import { ProviderProvider } from '@/context/ProviderContext';
+import { PaymentProvider } from '@/context/PaymentContext';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -26,7 +28,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <ProviderStatusProvider>
           <ReceiptProvider>
-            {children}
+            <ProviderProvider>
+              <PaymentProvider>
+                {children}
+              </PaymentProvider>
+            </ProviderProvider>
           </ReceiptProvider>
         </ProviderStatusProvider>
       </QueryClientProvider>

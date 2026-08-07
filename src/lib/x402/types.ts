@@ -38,6 +38,7 @@ export interface Receipt {
   id: string;
   providerId: string;
   providerName?: string;
+  scheme?: PaymentScheme;
   requirement: PaymentRequirement;
   payload: PaymentPayload;
   verification: VerificationResult;

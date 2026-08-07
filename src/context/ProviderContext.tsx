@@ -5,6 +5,7 @@ import { Provider } from "../lib/x402/types";
 import { INITIAL_PROVIDERS } from "../lib/data/providers";
 import { findBestProvider } from "../lib/recommendation";
 import { generateId } from "../lib/utils";
+import { fetchBackendProviders, createBackendProvider } from "../lib/api";
 
 interface ProviderContextType {
   providers: Provider[];
@@ -23,12 +24,32 @@ export const ProviderProvider = ({ children }: { children: ReactNode }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  React.useEffect(() => {
+    async function loadBackendProviders() {
+      const backendProviders = await fetchBackendProviders();
+      if (backendProviders && backendProviders.length > 0) {
+        setProviders(backendProviders);
+      }
+    }
+    loadBackendProviders();
+  }, []);
+
   const addProvider = (newProvider: Omit<Provider, "id">): Provider => {
     const created: Provider = {
       ...newProvider,
       id: generateId("p_custom"),
     };
     setProviders((prev) => [created, ...prev]);
+
+    // Async sync to backend
+    createBackendProvider(newProvider).then((backendCreated) => {
+      if (backendCreated) {
+        setProviders((prev) =>
+          prev.map((p) => (p.id === created.id ? backendCreated : p))
+        );
+      }
+    });
+
     return created;
   };
 

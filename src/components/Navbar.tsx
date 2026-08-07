@@ -77,7 +77,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
   // Formatted balances
   const formattedEth = ethBalanceData
-    ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
+    ? `${(Number(ethBalanceData.value) / 1e18).toFixed(4)} ETH`
     : activeIsConnected
     ? '0.0000 ETH'
     : '0.0450 ETH';
