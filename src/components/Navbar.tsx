@@ -21,6 +21,8 @@ const USDC_BASE_SEPOLIA = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
+  { label: 'Compare', href: '/compare' },
+  { label: 'AI Advisor', href: '/agent-advisor' },
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
   { label: 'Provenance', href: '/provenance' },

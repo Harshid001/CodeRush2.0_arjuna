@@ -124,20 +124,38 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({ receipt, onViewTrace }
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
         <div className="flex items-center text-[11px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-400" />
           <span>Verified & Settled by Simulated Facilitator</span>
         </div>
 
-        <Link
-          href="/dashboard"
-          onClick={handleTraceClick}
-          className="inline-flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
-        >
-          <span>View Full Trace in Developer Portal</span>
-          <ExternalLink className="w-3.5 h-3.5 ml-1" />
-        </Link>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(receipt, null, 2));
+              const downloadAnchor = document.createElement('a');
+              downloadAnchor.setAttribute("href", dataStr);
+              downloadAnchor.setAttribute("download", `receipt-${receipt.id}.json`);
+              document.body.appendChild(downloadAnchor);
+              downloadAnchor.click();
+              downloadAnchor.remove();
+            }}
+            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
+            <span>Download JSON</span>
+          </button>
+
+          <Link
+            href="/dashboard"
+            onClick={handleTraceClick}
+            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-colors"
+          >
+            <span>Return To Dashboard</span>
+            <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+          </Link>
+        </div>
       </div>
     </div>
   );

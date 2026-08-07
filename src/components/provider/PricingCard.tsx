@@ -1,9 +1,12 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Clock, Shield, Star, DollarSign } from 'lucide-react';
+import { Clock, Shield, Star, DollarSign, GitCompareArrows, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import type { MarketplaceApi } from '@/lib/data/marketplaceApis';
+import { useCompare } from '@/context/CompareContext';
 
 interface PricingCardProps {
     api: MarketplaceApi;
@@ -11,6 +14,28 @@ interface PricingCardProps {
 
 export default function PricingCard({ api }: PricingCardProps) {
     const isUsageCap = api.model.toLowerCase().includes('cap');
+    const router = useRouter();
+    const { addToCompare, isInCompare } = useCompare();
+    const alreadyAdded = isInCompare(api.id);
+
+    const handleBuyApi = () => {
+        router.push(`/agent-advisor?providerId=${api.id}&category=${encodeURIComponent(api.cat)}&task=${encodeURIComponent(api.name)}`);
+    };
+
+    const handleCompare = () => {
+        if (alreadyAdded) {
+            toast('Already in comparison list.');
+            router.push('/compare');
+            return;
+        }
+        const success = addToCompare(api);
+        if (success) {
+            toast.success(`${api.name} added to comparison.`);
+            router.push('/compare');
+        } else {
+            toast.error('Compare list is full (max 3). Remove one first.');
+        }
+    };
 
     return (
         <div style={{
@@ -75,9 +100,7 @@ export default function PricingCard({ api }: PricingCardProps) {
             </div>
 
             <motion.button
-                onClick={() => {
-                    import('sonner').then(m => m.toast('Purchase flow coming soon.'));
-                }}
+                onClick={handleBuyApi}
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 style={{
                     width: '100%', padding: '15px', borderRadius: 14,
@@ -92,19 +115,20 @@ export default function PricingCard({ api }: PricingCardProps) {
             </motion.button>
 
             <motion.button
-                onClick={() => {
-                    import('sonner').then(m => m.toast('Comparison tools coming soon.'));
-                }}
+                onClick={handleCompare}
                 whileHover={{ background: 'rgba(255,255,255,0.08)' }}
                 style={{
                     width: '100%', padding: '14px', borderRadius: 14,
-                    background: 'rgba(255,255,255,0.04)', color: '#bbb',
+                    background: alreadyAdded ? 'rgba(90,154,90,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: alreadyAdded ? '#5a9a5a' : '#bbb',
                     fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 500,
-                    border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
+                    border: alreadyAdded ? '1px solid rgba(90,154,90,0.25)' : '1px solid rgba(255,255,255,0.08)',
+                    cursor: 'pointer',
                     transition: 'background 0.2s, color 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
             >
-                Compare
+                {alreadyAdded ? <><Check size={14} /> View Comparison →</> : <><GitCompareArrows size={14} /> Compare</>}
             </motion.button>
 
             <p style={{
