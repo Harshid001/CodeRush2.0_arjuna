@@ -1,0 +1,124 @@
+import seedData from "./providers.seed.json";
+import { Provider } from "./types";
+import { ALGORAND_TESTNET_CAIP2 } from "@x402-avm/avm";
+
+export interface SeedProviderEntry {
+  providerId: string;
+  name: string;
+  category: string;
+  description: string;
+  endpoint: string;
+  payTo: string;
+  priceMicroUsdc: number;
+  priceDisplay: string;
+  unit: string;
+  active: boolean;
+}
+
+export interface SeedAssetConfig {
+  id: number;
+  symbol: string;
+  decimals: number;
+  network: string;
+}
+
+class ProviderRegistry {
+  private byId: Map<string, SeedProviderEntry> = new Map();
+  private bySlug: Map<string, SeedProviderEntry> = new Map();
+  public asset: SeedAssetConfig;
+
+  constructor() {
+    this.asset = seedData.asset;
+    this.initRegistry();
+  }
+
+  private initRegistry() {
+    const endpointsSeen = new Set<string>();
+
+    for (const entry of seedData.providers) {
+      const cleanEndpoint = entry.endpoint.toLowerCase().replace(/\/$/, "");
+      const slug = cleanEndpoint.split("/").pop() || cleanEndpoint;
+
+      // Rule 3: Enforce strict 1-to-1 endpoint uniqueness collision check
+      if (endpointsSeen.has(cleanEndpoint)) {
+        throw new Error(
+          `[ProviderRegistry FATAL] Endpoint collision detected! Multiple providers claim endpoint '${entry.endpoint}'. Provider ID: '${entry.providerId}'`
+        );
+      }
+      endpointsSeen.add(cleanEndpoint);
+
+      // Rule 1: Warn on unconfigured placeholder payTo addresses at load time
+      if (entry.payTo.startsWith("REPLACE_WITH_")) {
+        console.warn(
+          `[ProviderRegistry WARN] Provider '${entry.providerId}' has an unconfigured placeholder payTo address: '${entry.payTo}'. It is marked inactive for live payouts.`
+        );
+      }
+
+      this.byId.set(entry.providerId, entry);
+      this.bySlug.set(slug, entry);
+      this.bySlug.set(cleanEndpoint, entry);
+    }
+
+    console.log(
+      `[ProviderRegistry] Successfully loaded ${this.byId.size} providers from seed dataset. Live Demo Provider: '${this.getLiveDemoProvider().providerId}' -> payTo: '${this.getLiveDemoProvider().payTo}'`
+    );
+  }
+
+  public getProviderEntry(idOrSlug: string): SeedProviderEntry | null {
+    if (!idOrSlug) return null;
+    const cleanKey = idOrSlug.toLowerCase().replace(/\/$/, "");
+    const slugKey = cleanKey.split("/").pop() || cleanKey;
+
+    return (
+      this.byId.get(idOrSlug) ||
+      this.bySlug.get(cleanKey) ||
+      this.bySlug.get(slugKey) ||
+      null
+    );
+  }
+
+  public getLiveDemoProvider(): SeedProviderEntry {
+    const live = this.byId.get("prov_demo_live");
+    if (!live) {
+      throw new Error("[ProviderRegistry FATAL] Live demo provider 'prov_demo_live' missing from seed file!");
+    }
+    return live;
+  }
+
+  public getAllProviders(): Provider[] {
+    return Array.from(this.byId.values()).map((entry) => this.toProviderObject(entry));
+  }
+
+  public toProviderObject(entry: SeedProviderEntry): Provider {
+    const priceUsd = entry.priceMicroUsdc / 1000000;
+    const defaultPayTo = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
+    const payTo = (!entry.payTo || entry.payTo.startsWith("REPLACE_WITH_")) ? defaultPayTo : entry.payTo;
+
+    return {
+      id: entry.providerId,
+      name: entry.name,
+      description: entry.description,
+      category: entry.category,
+      price: priceUsd,
+      paymentType: "exact",
+      qualityScore: entry.providerId === "prov_demo_live" ? 98 : 90,
+      payToAddress: payTo,
+      network: ALGORAND_TESTNET_CAIP2,
+      endpoint: entry.endpoint,
+      outputSchema: { status: "string", result: "object" },
+      active: entry.active,
+    };
+  }
+}
+
+export const registry = new ProviderRegistry();
+
+export function getProvider(idOrSlug: string): Provider {
+  const entry = registry.getProviderEntry(idOrSlug);
+  if (!entry) {
+    // Fallback to live demo provider if unknown slug is passed
+    const liveEntry = registry.getLiveDemoProvider();
+    return registry.toProviderObject(liveEntry);
+  }
+  return registry.toProviderObject(entry);
+}

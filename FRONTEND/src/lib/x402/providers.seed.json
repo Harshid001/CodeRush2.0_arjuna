@@ -1,0 +1,119 @@
+{
+  "_comment": "Seed dataset for the x402-avm provider marketplace. Replace payTo addresses with real funded TestNet accounts before demo. priceMicroUsdc is in USDC-ASA base units (10458941, 6 decimals) — e.g. 50000 = $0.05.",
+  "asset": {
+    "id": 10458941,
+    "symbol": "USDC",
+    "decimals": 6,
+    "network": "algorand:testnet"
+  },
+  "providers": [
+    {
+      "providerId": "prov_llm_codellama",
+      "name": "CodeLlama Inference",
+      "category": "llm",
+      "description": "Code-generation completions via a hosted CodeLlama endpoint.",
+      "endpoint": "/api/providers/code-llama",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_1",
+      "priceMicroUsdc": 50000,
+      "priceDisplay": "$0.05 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_llm_general",
+      "name": "General Purpose LLM",
+      "category": "llm",
+      "description": "General chat/completion endpoint for lightweight agent reasoning tasks.",
+      "endpoint": "/api/providers/general-llm",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_2",
+      "priceMicroUsdc": 80000,
+      "priceDisplay": "$0.08 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_weather_current",
+      "name": "Live Weather Feed",
+      "category": "data",
+      "description": "Real-time weather data by lat/long, updated every 10 minutes.",
+      "endpoint": "/api/providers/weather",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_3",
+      "priceMicroUsdc": 10000,
+      "priceDisplay": "$0.01 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_market_prices",
+      "name": "Crypto Market Prices",
+      "category": "data",
+      "description": "Spot price feed for major crypto assets, sourced from aggregated exchange data.",
+      "endpoint": "/api/providers/market-prices",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_4",
+      "priceMicroUsdc": 20000,
+      "priceDisplay": "$0.02 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_translation",
+      "name": "Multilingual Translation API",
+      "category": "nlp",
+      "description": "Text translation across 40+ languages, priced per request regardless of length.",
+      "endpoint": "/api/providers/translate",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_5",
+      "priceMicroUsdc": 30000,
+      "priceDisplay": "$0.03 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_ocr",
+      "name": "Document OCR Extractor",
+      "category": "vision",
+      "description": "Extracts structured text from uploaded document images.",
+      "endpoint": "/api/providers/ocr",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_6",
+      "priceMicroUsdc": 60000,
+      "priceDisplay": "$0.06 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_sentiment",
+      "name": "Sentiment Analysis API",
+      "category": "nlp",
+      "description": "Classifies input text sentiment (positive/negative/neutral) with confidence score.",
+      "endpoint": "/api/providers/sentiment",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_7",
+      "priceMicroUsdc": 15000,
+      "priceDisplay": "$0.015 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_geocode",
+      "name": "Geocoding & Reverse Geocoding",
+      "category": "data",
+      "description": "Converts addresses to coordinates and back, cached hourly.",
+      "endpoint": "/api/providers/geocode",
+      "payTo": "REPLACE_WITH_PROVIDER_TESTNET_ADDRESS_8",
+      "priceMicroUsdc": 12000,
+      "priceDisplay": "$0.012 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
+      "providerId": "prov_demo_live",
+      "name": "Demo Provider (Live Judge Wallet)",
+      "category": "demo",
+      "description": "Provider used for live demo settlement — payTo points to a real funded TestNet wallet for on-stage verification.",
+      "endpoint": "/api/providers/demo",
+      "payTo": "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4",
+      "priceMicroUsdc": 50000,
+      "priceDisplay": "$0.05 / request",
+      "unit": "per_request",
+      "active": true
+    }
+  ]
+}

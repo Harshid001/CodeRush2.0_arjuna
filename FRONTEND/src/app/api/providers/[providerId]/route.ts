@@ -4,6 +4,7 @@ import { HTTPFacilitatorClient, x402ResourceServer } from "@x402-avm/core/server
 import { registerExactAvmScheme } from "@x402-avm/avm/exact/server";
 import { ALGORAND_TESTNET_CAIP2 } from "@x402-avm/avm";
 import { INITIAL_PROVIDERS } from "@/lib/data/providers";
+import { getProvider } from "@/lib/x402/registry";
 import {
   createPaymentRecord,
   addProvenanceEvent,
@@ -28,8 +29,8 @@ export async function GET(
 ) {
   const resolvedParams = await params;
   const providerId = resolvedParams.providerId;
-  const provider = INITIAL_PROVIDERS.find((p) => p.id === providerId) || INITIAL_PROVIDERS[0];
-  const payTo = process.env.RESOURCE_PAY_TO || provider.payToAddress || DEFAULT_PAY_TO;
+  const provider = getProvider(providerId);
+  const payTo = (!provider.payToAddress || provider.payToAddress.startsWith("REPLACE_WITH_")) ? DEFAULT_PAY_TO : provider.payToAddress;
 
   const paymentHeader =
     request.headers.get("authorization") ||
