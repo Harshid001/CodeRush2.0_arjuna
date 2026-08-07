@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X, ShieldAlert, Zap, DollarSign, Server, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, X, Zap, DollarSign, Server } from 'lucide-react';
+import { usePaymentContext } from '@/context/PaymentContext';
 
 export interface CapItem {
   id: string;
@@ -15,56 +16,57 @@ export interface CapItem {
   providerName?: string;
 }
 
-export const INITIAL_CAPS: CapItem[] = [
-  {
-    id: 'cap-req-1',
-    type: 'per_request',
-    title: 'Per-Request Cap',
-    subtitle: 'Latest: GPT-4 Vision ($0.042)',
-    currentAmount: 0.042,
-    maxCap: 0.05,
-    unit: '$',
-  },
-  {
-    id: 'cap-prov-1',
-    type: 'per_provider_daily',
-    title: 'OpenCore Labs',
-    subtitle: 'Per-provider daily cap',
-    currentAmount: 3.20,
-    maxCap: 5.00,
-    unit: '$',
-    providerName: 'OpenCore Labs',
-  },
-  {
-    id: 'cap-prov-2',
-    type: 'per_provider_daily',
-    title: 'PixelForge AI',
-    subtitle: 'Per-provider daily cap',
-    currentAmount: 5.20,
-    maxCap: 5.00,
-    unit: '$',
-    providerName: 'PixelForge AI',
-  },
-  {
-    id: 'cap-global-1',
-    type: 'global_daily',
-    title: 'Global Daily Cap',
-    subtitle: 'Across all agents today',
-    currentAmount: 18.40,
-    maxCap: 25.00,
-    unit: '$',
-  },
-];
-
 interface BudgetCapsProps {
   caps?: CapItem[];
 }
 
-export default function BudgetCaps({ caps = INITIAL_CAPS }: BudgetCapsProps) {
+export default function BudgetCaps({ caps }: BudgetCapsProps) {
+  const { policyLimits, spendToday } = usePaymentContext();
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
+  const activeCaps: CapItem[] = caps || [
+    {
+      id: 'cap-req-1',
+      type: 'per_request',
+      title: 'Per-Request Cap',
+      subtitle: `Per-request budget limit ($${policyLimits.perRequestMax.toFixed(2)})`,
+      currentAmount: 0.042,
+      maxCap: policyLimits.perRequestMax,
+      unit: '$',
+    },
+    {
+      id: 'cap-prov-1',
+      type: 'per_provider_daily',
+      title: 'OpenCore Labs',
+      subtitle: 'Per-provider daily cap',
+      currentAmount: spendToday.todayByProvider['p-vision-inspector'] || spendToday.todayByProvider['gpt4-vision'] || 3.20,
+      maxCap: policyLimits.perProviderDailyMax,
+      unit: '$',
+      providerName: 'OpenCore Labs',
+    },
+    {
+      id: 'cap-prov-2',
+      type: 'per_provider_daily',
+      title: 'PixelForge AI',
+      subtitle: 'Per-provider daily cap',
+      currentAmount: spendToday.todayByProvider['p-llama3-sentiment'] || spendToday.todayByProvider['p-vision-inspector'] || 5.20,
+      maxCap: policyLimits.perProviderDailyMax,
+      unit: '$',
+      providerName: 'PixelForge AI',
+    },
+    {
+      id: 'cap-global-1',
+      type: 'global_daily',
+      title: 'Global Daily Cap',
+      subtitle: 'Across all agents today',
+      currentAmount: Math.max(spendToday.today, 18.40),
+      maxCap: policyLimits.dailyMax,
+      unit: '$',
+    },
+  ];
+
   // Identify caps that exceed limit
-  const exceededCaps = caps.filter((c) => c.currentAmount >= c.maxCap && !dismissedAlerts.includes(c.id));
+  const exceededCaps = activeCaps.filter((c) => c.currentAmount >= c.maxCap && !dismissedAlerts.includes(c.id));
 
   const getBarColor = (pct: number) => {
     if (pct >= 100) return '#c83c3c';
@@ -181,7 +183,7 @@ export default function BudgetCaps({ caps = INITIAL_CAPS }: BudgetCapsProps) {
         style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}
         className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
       >
-        {caps.map((cap, idx) => {
+        {activeCaps.map((cap, idx) => {
           const rawPct = (cap.currentAmount / cap.maxCap) * 100;
           const displayPct = Math.round(rawPct);
           const barColor = getBarColor(rawPct);

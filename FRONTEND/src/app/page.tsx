@@ -242,7 +242,7 @@ export default function Home() {
                   onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
                 >
-                  🤖 AI Marketplace Agent <ArrowRight size={16} />
+                  AI Marketplace Agent <ArrowRight size={16} />
                 </Link>
 
                 <Link href="/marketplace" style={{
@@ -255,7 +255,7 @@ export default function Home() {
                   onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; }}
                   onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)'; }}
                 >
-                  🛒 Manual Marketplace
+                  Manual Marketplace
                 </Link>
               </motion.div>
             </div>

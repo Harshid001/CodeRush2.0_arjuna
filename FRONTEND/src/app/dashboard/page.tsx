@@ -11,17 +11,10 @@ import ReceiptCard from '@/components/ReceiptCard';
 import ProviderBreakToggle from '@/components/ProviderBreakToggle';
 import { useReceipts } from '@/lib/receiptStore';
 import { useAuth } from '@/context/AuthContext';
+import { useWallet } from '@txnlab/use-wallet-react';
 
 const reqData    = [{ m:'Jan',v:12000},{m:'Feb',v:18000},{m:'Mar',v:15000},{m:'Apr',v:22000},{m:'May',v:28000},{m:'Jun',v:24000},{m:'Jul',v:35000},{m:'Aug',v:42000}];
 const spendData  = [{ m:'Jan',v:48},{m:'Feb',v:72},{m:'Mar',v:61},{m:'Apr',v:88},{m:'May',v:115},{m:'Jun',v:98},{m:'Jul',v:142},{m:'Aug',v:167}];
-
-const txns = [
-  { api:'GPT-4 Vision Pro',  provider:'OpenCore Labs',  reqs:4200,  amt:'$17.64', date:'Aug 6', chain:'ETH' },
-  { api:'Whisper STT Ultra', provider:'AudioAI Systems',reqs:8100,  amt:'$14.58', date:'Aug 5', chain:'SOL' },
-  { api:'EmbedForce v3',     provider:'VectorCore',     reqs:45000, amt:'$13.50', date:'Aug 4', chain:'ETH' },
-  { api:'Claude Inference',  provider:'Anthropos Cloud',reqs:1800,  amt:'$9.90',  date:'Aug 3', chain:'POL' },
-  { api:'DataStream ML',     provider:'NexusDB Corp',   reqs:22000, amt:'$26.40', date:'Aug 2', chain:'ARB' },
-];
 
 const myAPIs = [
   { name:'GPT-4 Vision Pro', pct:78, used:'7.8K', cap:'10K',   status:'active' },
@@ -52,23 +45,39 @@ export default function Dashboard() {
   const router = useRouter();
   const { receipts, exportReceiptsCSV, exportReceiptsJSON } = useReceipts();
   const { user, logout, isLoggedIn } = useAuth();
+  const { activeAddress: connectedAddress } = useWallet();
 
-  const displayName = user?.name || 'Alex Morgan';
+  const displayName = user?.name || (connectedAddress ? `Account (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)})` : 'Nexus Developer');
   const displayRole = user?.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Developer';
-  const displayWallet = user?.walletAddress
+  const displayWallet = connectedAddress
+    ? `${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`
+    : user?.walletAddress
     ? (user.walletAddress.length > 14 ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : user.walletAddress)
-    : '0x71C...9E23';
+    : 'Not Connected';
 
   return (
     <div style={{ background:'#050505', minHeight:'100vh' }}>
       <Navbar />
       <main style={{ paddingTop:88, paddingBottom:80 }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 28px' }}>
+        <div style={{ width: '100%', padding: '0 32px' }}>
           <div style={{ display:'flex', gap:28, marginTop:20 }}>
 
             {/* Sidebar */}
             <motion.aside initial={{ opacity:0, x:-16 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.5 }}
-              style={{ width:220, flexShrink:0, display:'flex', flexDirection:'column', gap:4 }} className="hidden lg:flex">
+              style={{
+                width: 220,
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                position: 'sticky',
+                top: 104,
+                alignSelf: 'flex-start',
+                maxHeight: 'calc(100vh - 120px)',
+                overflowY: 'auto',
+              }}
+              className="hidden lg:flex"
+            >
               {/* Profile Card */}
               <Link href="/profile" style={{ textDecoration:'none' }}>
                 <div style={{
@@ -219,7 +228,7 @@ export default function Dashboard() {
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                   <div>
                     <h2 style={{ fontFamily:'Inter', fontSize:15, fontWeight:600, color:'#efefef' }}>Recent Execution Receipts</h2>
-                    <p style={{ fontFamily:'Inter', fontSize:12, color:'#555', marginTop:2 }}>Showing latest 2 execution receipts</p>
+                    <p style={{ fontFamily:'Inter', fontSize:12, color:'#555', marginTop:2 }}>Showing latest execution receipts</p>
                   </div>
                   <Link
                     href="/provenance"
@@ -248,50 +257,15 @@ export default function Dashboard() {
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   {myAPIs.map(a => (
                     <div key={a.name} style={{ display:'flex', alignItems:'center', gap:14 }}>
-                      <div style={{ flex:1 }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:7 }}>
-                          <span style={{ fontFamily:'Inter', fontSize:13, fontWeight:500, color:'#bbb' }}>{a.name}</span>
-                          <span style={{ fontFamily:'Inter', fontSize:11, color:'#444' }}>{a.used} / {a.cap}</span>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background: a.status === 'active' ? '#5a9a5a' : '#c8a032', boxShadow: a.status === 'active' ? '0 0 6px rgba(74,138,74,0.8)' : '0 0 6px rgba(200,160,50,0.8)' }} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                          <span style={{ fontFamily:'Inter', fontSize:13, fontWeight:600, color:'#e0e0e0' }}>{a.name}</span>
+                          <span style={{ fontFamily:'Inter', fontSize:12, color:'#444' }}>{a.used} / {a.cap} ({a.pct}%)</span>
                         </div>
-                        <div style={{ height:5, borderRadius:3, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-                          <motion.div initial={{ width:0 }} animate={{ width:`${a.pct}%` }} transition={{ duration:0.9, ease:'easeOut' }}
-                            style={{ height:'100%', borderRadius:3, background: a.status==='warning' ? 'rgba(180,140,70,0.55)' : 'rgba(160,185,255,0.28)' }} />
+                        <div style={{ height:4, borderRadius:2, background:'rgba(255,255,255,0.05)', overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${a.pct}%`, background: a.status === 'active' ? 'rgba(74,138,74,0.6)' : 'rgba(200,160,50,0.6)', borderRadius:2 }} />
                         </div>
-                      </div>
-                      <span style={{ fontFamily:'Inter', fontSize:11, fontWeight:600, padding:'3px 9px', borderRadius:100, flexShrink:0,
-                        background: a.status==='warning' ? 'rgba(160,120,50,0.1)' : 'rgba(70,120,70,0.1)',
-                        color:      a.status==='warning' ? '#9a7a40' : '#4a8a4a',
-                        border: `1px solid ${a.status==='warning' ? 'rgba(160,120,50,0.2)' : 'rgba(70,120,70,0.2)'}`,
-                      }}>{a.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Transactions */}
-              <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.42 }}
-                style={{ borderRadius:18, overflow:'hidden', border:'1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ padding:'18px 20px', background:'rgba(14,14,16,0.95)', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                  <h3 style={{ fontFamily:'Inter', fontSize:14, fontWeight:600, color:'#ccc' }}>Recent Transactions</h3>
-                  <Link href="/provenance" style={{ display:'flex', alignItems:'center', gap:4, fontFamily:'Inter', fontSize:12, color:'#80a5e5', textDecoration:'none' }}>View all in Provenance Store <ChevronRight size={11} /></Link>
-                </div>
-                <div style={{ background:'rgba(10,10,12,0.95)' }}>
-                  {txns.map((tx,i) => (
-                    <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom: i<txns.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none', transition:'background 0.15s', cursor:'pointer' }}
-                      onMouseEnter={e=>{(e.currentTarget as HTMLDivElement).style.background='rgba(255,255,255,0.02)';}}
-                      onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.background='transparent';}}>
-                      <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                        <div style={{ width:32, height:32, borderRadius:10, background:'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                          <Zap size={13} color="#555" />
-                        </div>
-                        <div>
-                          <div style={{ fontFamily:'Inter', fontSize:13, fontWeight:500, color:'#bbb', marginBottom:2 }}>{tx.api}</div>
-                          <div style={{ fontFamily:'Inter', fontSize:11, color:'#333' }}>{tx.reqs.toLocaleString()} req · {tx.chain}</div>
-                        </div>
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                        <span style={{ fontFamily:'Inter', fontSize:12, color:'#2a2a2a' }}>{tx.date}</span>
-                        <span style={{ fontFamily:'Inter', fontSize:14, fontWeight:600, color:'#888' }}>{tx.amt}</span>
                       </div>
                     </div>
                   ))}

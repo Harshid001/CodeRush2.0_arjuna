@@ -42,7 +42,7 @@ export default function ModeSelector({ currentMode }: ModeSelectorProps) {
           }}
         >
           <ShoppingCart size={14} color={currentMode === 'manual' ? '#ffffff' : '#666677'} />
-          <span>🛒 Manual Marketplace</span>
+          <span>Manual Marketplace</span>
         </Link>
 
         <Link
@@ -64,7 +64,7 @@ export default function ModeSelector({ currentMode }: ModeSelectorProps) {
           }}
         >
           <Bot size={14} color={currentMode === 'agent' ? '#ffffff' : '#666677'} />
-          <span>🤖 AI Marketplace Agent (Autonomous)</span>
+          <span>AI Marketplace Agent (Autonomous)</span>
         </Link>
       </div>
 

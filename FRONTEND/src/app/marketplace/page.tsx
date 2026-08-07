@@ -162,7 +162,7 @@ export default function MarketplacePage() {
     <div style={{ background: '#050505', minHeight: '100vh' }}>
       <Navbar />
       <main style={{ paddingTop: 100, paddingBottom: 120 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ width: '100%', padding: '0 32px' }}>
           
           {/* Mode Switcher */}
           <ModeSelector currentMode="manual" />

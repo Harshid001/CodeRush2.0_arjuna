@@ -8,7 +8,7 @@ import { useAlgorandBalance } from '@/hooks/useAlgorandBalance';
 import { useAuth } from '@/context/AuthContext';
 
 const links = [
-  { label: 'AI Agent 🤖', href: '/agent' },
+  { label: 'AI Agent', href: '/agent' },
   { label: 'Marketplace', href: '/marketplace' },
   { label: 'Dashboard',   href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
@@ -222,7 +222,7 @@ export default function Navbar({
           borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
         }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+        <div style={{ width: '100%', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', height: 64 }}>
 
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
@@ -239,9 +239,9 @@ export default function Navbar({
             </span>
           </Link>
 
-          {/* Center links */}
+          {/* Center fast routing links */}
           {!hideLinks && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="hidden lg:flex">
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4 }} className="hidden lg:flex">
               {links.map(l => (
                 <Link key={l.label} href={l.href} style={{
                   fontFamily: 'Inter', fontSize: 13.5, fontWeight: 500, color: '#666',
