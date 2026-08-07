@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BudgetCaps from '@/components/BudgetCaps';
 import ReceiptCard from '@/components/ReceiptCard';
+import ProviderBreakToggle from '@/components/ProviderBreakToggle';
 import { useReceipts } from '@/lib/receiptStore';
 
 const reqData    = [{ m:'Jan',v:12000},{m:'Feb',v:18000},{m:'Mar',v:15000},{m:'Apr',v:22000},{m:'May',v:28000},{m:'Jun',v:24000},{m:'Jul',v:35000},{m:'Aug',v:42000}];
@@ -130,6 +131,9 @@ export default function Dashboard() {
                   </button>
                 </div>
               </motion.div>
+
+              {/* Debug Tool: Provider Break Toggle */}
+              <ProviderBreakToggle />
 
               {/* Specific Budget Caps (Per-Request, Per-Provider Daily, Global Daily) */}
               <BudgetCaps />

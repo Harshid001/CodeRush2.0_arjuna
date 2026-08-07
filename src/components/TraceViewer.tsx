@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, X, Loader2, ExternalLink, ShieldCheck, Zap,
   Clock, AlertTriangle, ArrowRight, ChevronDown, ChevronUp,
-  FileText, Store, Server, Key, Lock, CheckCircle2, Copy
+  FileText, Store, Server, Key, Lock, CheckCircle2, Copy, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { useAccount } from 'wagmi';
 import { useReceipts } from '@/lib/receiptStore';
+import { useProviderStatus } from '@/lib/providerStatus';
 
 export interface TraceEvent {
   id: string;
@@ -139,11 +140,17 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const { address } = useAccount();
   const { createAndAddReceipt, getReceiptById, receipts } = useReceipts();
+  const { isProviderDown } = useProviderStatus();
 
-  const activeWallet = address || '0x71C83B47c04E923a10F8721102910a9E23';
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeWallet = (mounted && address) ? address : '0x71C83B47c04E923a10F8721102910a9E23';
 
   // Wire trace events into ReceiptStore with Web Crypto SHA-256
   useEffect(() => {
@@ -280,9 +287,12 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
         <AnimatePresence mode="popLayout">
           {filteredEvents.map((ev, index) => {
             const isApproved = ev.policyDecision.approved;
+            const isDown = isProviderDown(ev.provider);
+            const fallbackProvider = isDown ? 'AudioAI Systems (Provider B)' : null;
+
             const rcpt = receipts.find((r) => r.receiptId === ev.id || r.provider === ev.provider);
 
-            // 8 Steps Definitions
+            // Steps Definitions (incorporating Provider Down & Fallback)
             const stepsList = [
               {
                 num: 1,
@@ -367,10 +377,36 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                   </div>
                 ),
               },
-              {
+            ];
+
+            // If Provider A is DOWN, insert Fallback Alert Step
+            if (isDown && isApproved) {
+              stepsList.push({
                 num: 5,
+                key: `${ev.id}-fallback`,
+                title: `⚠ Step 5: ${ev.provider} Unreachable (HTTP 500 Connection Timeout)`,
+                summary: `🔄 Falling back to Provider B: ${fallbackProvider}`,
+                icon: AlertCircle,
+                iconColor: '#c83c3c',
+                status: 'failed',
+                detail: (
+                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(180,60,60,0.1)', border: '1px solid rgba(180,60,60,0.3)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#c83c3c', marginBottom: 4 }}>
+                      Primary Provider Endpoint Timeout (500 Error)
+                    </div>
+                    <div style={{ fontSize: 12, color: '#dddddd', fontFamily: 'Inter' }}>
+                      Primary provider <strong>{ev.provider}</strong> failed to respond within 500ms SLA. Policy Engine automatically rerouted execution to failover provider: <strong style={{ color: '#80a5e5' }}>{fallbackProvider}</strong>. Zero double-charge incurred.
+                    </div>
+                  </div>
+                ),
+              });
+            }
+
+            stepsList.push(
+              {
+                num: isDown ? 6 : 5,
                 key: `${ev.id}-step5`,
-                title: 'Step 5: MetaMask Wallet Signature',
+                title: `${isDown ? 'Step 6' : 'Step 5'}: MetaMask Wallet Signature`,
                 summary: `Signed by: ${activeWallet.slice(0, 6)}...${activeWallet.slice(-4)}`,
                 icon: Key,
                 iconColor: '#80a5e5',
@@ -394,9 +430,9 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                 ),
               },
               {
-                num: 6,
+                num: isDown ? 7 : 6,
                 key: `${ev.id}-step6`,
-                title: 'Step 6: Payment Payload Verification',
+                title: `${isDown ? 'Step 7' : 'Step 6'}: Payment Payload Verification`,
                 summary: 'x402 Payment Header & Signature Verified',
                 icon: CheckCircle2,
                 iconColor: '#5a9a5a',
@@ -408,24 +444,26 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                 ),
               },
               {
-                num: 7,
+                num: isDown ? 8 : 7,
                 key: `${ev.id}-step7`,
-                title: 'Step 7: Provider Execution',
-                summary: 'Status 200 OK — Provider Inference Completed in 142ms',
+                title: `${isDown ? 'Step 8' : 'Step 7'}: Provider Execution`,
+                summary: isDown
+                  ? `Status 200 OK — Executed by Fallback ${fallbackProvider} (142ms)`
+                  : 'Status 200 OK — Provider Inference Completed in 142ms',
                 icon: Zap,
                 iconColor: '#5a9a5a',
                 status: isApproved ? 'done' : 'skipped',
                 detail: (
                   <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.4)', fontFamily: 'monospace', fontSize: 11, color: '#aaa' }}>
-                    {`{"status": 200, "provider": "${ev.provider}", "latency_ms": 142, "result": "Multimodal payload processed cleanly"}`}
+                    {`{"status": 200, "executed_by": "${isDown ? fallbackProvider : ev.provider}", "fallback_active": ${isDown}, "latency_ms": 142}`}
                   </div>
                 ),
               },
               {
-                num: 8,
+                num: isDown ? 9 : 8,
                 key: `${ev.id}-step8`,
-                title: 'Step 8: Verifiable Receipt Logged',
-                summary: `Receipt ID: ${rcpt?.receiptId || ev.id} · SHA-256 Hashes Verified`,
+                title: `${isDown ? 'Step 9' : 'Step 8'}: Verifiable Receipt Logged`,
+                summary: `Receipt ID: ${rcpt?.receiptId || ev.id} · Settled via ${isDown ? fallbackProvider : ev.provider}`,
                 icon: FileText,
                 iconColor: '#5a9a5a',
                 status: isApproved ? 'done' : 'skipped',
@@ -435,6 +473,12 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                       <span style={{ fontSize: 12, color: '#888' }}>Receipt ID:</span>
                       <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#fff' }}>{rcpt?.receiptId || ev.id}</span>
                     </div>
+                    {isDown && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: '#888' }}>Failover Execution:</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c8a032' }}>{ev.provider} → {fallbackProvider}</span>
+                      </div>
+                    )}
                     {ev.settlement.txHash && (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 12, color: '#888' }}>On-chain TX:</span>
@@ -451,8 +495,8 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                     )}
                   </div>
                 ),
-              },
-            ];
+              }
+            );
 
             return (
               <motion.div
@@ -464,8 +508,10 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                 style={{
                   borderRadius: 20,
                   overflow: 'hidden',
-                  background: 'linear-gradient(155deg, rgba(20,20,24,0.95) 0%, rgba(12,12,14,0.95) 100%)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: isDown
+                    ? 'linear-gradient(155deg, rgba(30,15,20,0.95) 0%, rgba(16,10,12,0.95) 100%)'
+                    : 'linear-gradient(155deg, rgba(20,20,24,0.95) 0%, rgba(12,12,14,0.95) 100%)',
+                  border: `1px solid ${isDown ? 'rgba(200,60,60,0.25)' : 'rgba(255,255,255,0.08)'}`,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                 }}
               >
@@ -508,12 +554,12 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                             fontSize: 11,
                             padding: '2px 8px',
                             borderRadius: 100,
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#888',
-                            border: '1px solid rgba(255,255,255,0.08)',
+                            background: isDown ? 'rgba(180,60,60,0.2)' : 'rgba(255,255,255,0.05)',
+                            color: isDown ? '#c83c3c' : '#888',
+                            border: `1px solid ${isDown ? 'rgba(180,60,60,0.3)' : 'rgba(255,255,255,0.08)'}`,
                           }}
                         >
-                          {ev.provider}
+                          {ev.provider} {isDown ? '(DOWN)' : ''}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#555', marginTop: 2, fontFamily: 'Inter' }}>
@@ -523,45 +569,65 @@ export default function TraceViewer({ events = INITIAL_TRACE_EVENTS, isPolling =
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span
-                      style={{
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        padding: '4px 12px',
-                        borderRadius: 100,
-                        background: isApproved
-                          ? ev.settlement.status === 'confirmed'
-                            ? 'rgba(74,138,74,0.12)'
-                            : 'rgba(200,160,50,0.12)'
-                          : 'rgba(180,60,60,0.12)',
-                        color: isApproved
-                          ? ev.settlement.status === 'confirmed'
-                            ? '#5a9a5a'
-                            : '#c8a032'
-                          : '#c83c3c',
-                        border: `1px solid ${
-                          isApproved
+                    {isDown && isApproved ? (
+                      <span
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          padding: '4px 12px',
+                          borderRadius: 100,
+                          background: 'rgba(200,160,50,0.15)',
+                          color: '#c8a032',
+                          border: '1px solid rgba(200,160,50,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                        }}
+                      >
+                        <RefreshCw size={12} className="animate-spin-slow" /> ● Fallback Executed (Provider A → B)
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          padding: '4px 12px',
+                          borderRadius: 100,
+                          background: isApproved
                             ? ev.settlement.status === 'confirmed'
-                              ? 'rgba(74,138,74,0.25)'
-                              : 'rgba(200,160,50,0.25)'
-                            : 'rgba(180,60,60,0.25)'
-                        }`,
-                      }}
-                    >
-                      {!isApproved
-                        ? '● Policy Rejected'
-                        : ev.settlement.status === 'pending'
-                        ? '● Settling On-chain'
-                        : '● Settled Successfully'}
-                    </span>
+                              ? 'rgba(74,138,74,0.12)'
+                              : 'rgba(200,160,50,0.12)'
+                            : 'rgba(180,60,60,0.12)',
+                          color: isApproved
+                            ? ev.settlement.status === 'confirmed'
+                              ? '#5a9a5a'
+                              : '#c8a032'
+                            : '#c83c3c',
+                          border: `1px solid ${
+                            isApproved
+                              ? ev.settlement.status === 'confirmed'
+                                ? 'rgba(74,138,74,0.25)'
+                                : 'rgba(200,160,50,0.25)'
+                              : 'rgba(180,60,60,0.25)'
+                          }`,
+                        }}
+                      >
+                        {!isApproved
+                          ? '● Policy Rejected'
+                          : ev.settlement.status === 'pending'
+                          ? '● Settling On-chain'
+                          : '● Settled Successfully'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* 8-Step Collapsible Vertical Stepper */}
+                {/* Collapsible Stepper */}
                 <div style={{ padding: '24px 28px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {stepsList.map((step, sIdx) => {
+                    {stepsList.map((step) => {
                       const isExpanded = expandedStep === step.key;
                       const isSkipped = !isApproved && step.num > 3;
                       const Icon = step.icon;

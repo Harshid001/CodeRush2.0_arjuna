@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useProviderStatus } from '@/lib/providerStatus';
 
 export interface CatalogItem {
   id: string;
@@ -21,6 +22,8 @@ interface CatalogTableProps {
 }
 
 export default function CatalogTable({ items, onPurchase }: CatalogTableProps) {
+  const { isProviderDown } = useProviderStatus();
+
   const getScoreBadge = (score: number) => {
     let color = '#5a9a5a'; // green >95
     let bg = 'rgba(74,138,74,0.12)';
@@ -114,102 +117,119 @@ export default function CatalogTable({ items, onPurchase }: CatalogTableProps) {
         </thead>
 
         <tbody>
-          {items.map((item, idx) => (
-            <tr
-              key={item.id}
-              style={{
-                borderBottom: idx < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                transition: 'background 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.025)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {/* Provider Name */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
-                <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>
-                  {item.provider}
-                </div>
-                <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#555555', marginTop: 2 }}>
-                  {item.chain} · {item.cat}
-                </div>
-              </td>
+          {items.map((item, idx) => {
+            const isDown = isProviderDown(item.provider);
 
-              {/* Capability */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
-                <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 500, color: '#dddddd' }}>
-                  {item.name}
-                </div>
-              </td>
+            return (
+              <tr
+                key={item.id}
+                style={{
+                  borderBottom: idx < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  background: isDown ? 'rgba(180,60,60,0.03)' : 'transparent',
+                  transition: 'background 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDown ? 'rgba(180,60,60,0.06)' : 'rgba(255,255,255,0.025)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = isDown ? 'rgba(180,60,60,0.03)' : 'transparent';
+                }}
+              >
+                {/* Provider Name */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: isDown ? '#ff8888' : '#f0f0f0' }}>
+                      {item.provider}
+                    </span>
+                    {isDown && (
+                      <span
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 100,
+                          background: 'rgba(180,60,60,0.2)',
+                          color: '#c83c3c',
+                          border: '1px solid rgba(180,60,60,0.35)',
+                        }}
+                      >
+                        🔴 Down
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#555555', marginTop: 2 }}>
+                    {item.chain} · {item.cat}
+                  </div>
+                </td>
 
-              {/* Price / Request */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
-                <div style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                  {item.price}
-                </div>
-              </td>
+                {/* Capability */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                  <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 500, color: '#dddddd' }}>
+                    {item.name}
+                  </div>
+                </td>
 
-              {/* Quality Score */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
-                {getScoreBadge(item.qualityScore)}
-              </td>
+                {/* Price / Request */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                  <div style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                    {item.price}
+                  </div>
+                </td>
 
-              {/* Raw Description (Escaped Text) */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
-                <div
-                  style={{
-                    maxHeight: 70,
-                    overflowY: 'auto',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    background: 'rgba(0,0,0,0.4)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    color: '#a0a0a0',
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
-                  title="Raw uninterpreted prompt payload"
-                >
-                  {String(item.rawDescription)}
-                </div>
-              </td>
+                {/* Quality Score */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                  {getScoreBadge(item.qualityScore)}
+                </td>
 
-              {/* Action */}
-              <td style={{ padding: '16px 20px', verticalAlign: 'top', textAlign: 'right' }}>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => onPurchase?.(item)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 10,
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  }}
-                >
-                  Purchase
-                </motion.button>
-              </td>
-            </tr>
-          ))}
+                {/* Raw Description (Escaped Text) */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                  <div
+                    style={{
+                      maxHeight: 70,
+                      overflowY: 'auto',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: '#a0a0a0',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                    title="Raw uninterpreted prompt payload"
+                  >
+                    {String(item.rawDescription)}
+                  </div>
+                </td>
+
+                {/* Action */}
+                <td style={{ padding: '16px 20px', verticalAlign: 'top', textAlign: 'right' }}>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => onPurchase?.(item)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: isDown ? 'rgba(180,60,60,0.18)' : 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {isDown ? 'Try Purchase' : 'Purchase'}
+                  </motion.button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
