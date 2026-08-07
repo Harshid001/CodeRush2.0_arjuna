@@ -11,6 +11,7 @@ import type { MouseEvent } from 'react';
 import Navbar from '@/components/Navbar';
 import ParticleBackground from '@/components/ParticleBackground';
 import { googleAuthBackend } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -32,6 +33,7 @@ declare global {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [gsiLoaded, setGsiLoaded] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
@@ -52,12 +54,17 @@ export default function LoginPage() {
         setLoading(true);
         const data = await googleAuthBackend(response.credential);
         if (data.token) {
-          localStorage.setItem('auth_token', data.token);
-          localStorage.setItem('token', data.token);
-          if (data.user) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-          }
-          toast.success(`Welcome back, ${String(data.user?.name || 'Developer')}!`);
+          const userObj = {
+            id: (data.user?.id || data.user?._id || 'usr_google') as string,
+            email: (data.user?.email || 'developer@example.com') as string,
+            name: (data.user?.name || 'Developer User') as string,
+            role: (data.user?.role || 'developer') as 'developer' | 'provider' | 'admin',
+            walletAddress: (data.user?.walletAddress || '') as string,
+            avatarUrl: (data.user?.avatarUrl || '') as string,
+          };
+
+          authLogin(userObj, data.token);
+          toast.success(`Welcome back, ${userObj.name}!`);
           router.push('/dashboard');
         }
       } catch (err: unknown) {
@@ -67,7 +74,7 @@ export default function LoginPage() {
         setLoading(false);
       }
     },
-    [router]
+    [router, authLogin]
   );
 
   const initGsi = useCallback(() => {
@@ -275,6 +282,43 @@ export default function LoginPage() {
                     </button>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const demoUser = {
+                      id: 'usr_demo_88',
+                      email: 'alex.morgan@nexusapi.io',
+                      name: 'Alex Morgan',
+                      role: 'developer' as const,
+                      walletAddress: 'GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74',
+                    };
+                    authLogin(demoUser, 'demo_jwt_token_nexus_x402');
+                    toast.success('Signed in as Alex Morgan (Developer Profile)');
+                    router.push('/dashboard');
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
+                    padding: '12px 18px',
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+                    border: '1px solid rgba(0, 229, 255, 0.3)',
+                    color: '#00e5ff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.16)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.08)')}
+                >
+                  <Sparkles size={15} color="#00e5ff" />
+                  <span>Quick Demo Sign-In (Instant Access)</span>
+                </button>
 
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, Coins, ExternalLink, RefreshCw } from 'lucide-react';
 import { useWallet, WalletId } from '@txnlab/use-wallet-react';
 import { useAlgorandBalance } from '@/hooks/useAlgorandBalance';
+import { useAuth } from '@/context/AuthContext';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
@@ -16,10 +17,12 @@ const links = [
 ];
 
 export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
+  const { user, isLoggedIn, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -515,19 +518,206 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
               </AnimatePresence>
             </div>
 
-            <Link href={mounted && typeof window !== 'undefined' && (localStorage.getItem('auth_token') || localStorage.getItem('token')) ? "/dashboard" : "/login"}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                color: '#666', transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLDivElement).style.color = '#aaa'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLDivElement).style.color = '#666'; }}
-              >
-                <User size={15} />
-              </div>
-            </Link>
+            <div style={{ position: 'relative' }}>
+              {mounted && isLoggedIn && user ? (
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '5px 12px 5px 6px',
+                    borderRadius: 12,
+                    border: '1px solid rgba(0, 229, 255, 0.3)',
+                    background: 'rgba(0, 229, 255, 0.08)',
+                    color: '#ffffff',
+                    fontFamily: 'Inter',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.16)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.08)')}
+                >
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.name} style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} />
+                  ) : (
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        background: 'linear-gradient(135deg, #00e5ff, #a855f7)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#000000',
+                        fontWeight: 700,
+                        fontSize: 11,
+                      }}
+                    >
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                  <span>{user.name.split(' ')[0]}</span>
+                </button>
+              ) : (
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.09)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#aaaaaa',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                      e.currentTarget.style.color = '#ffffff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.color = '#aaaaaa';
+                    }}
+                  >
+                    <User size={15} />
+                  </div>
+                </Link>
+              )}
+
+              {/* User Profile Dropdown */}
+              <AnimatePresence>
+                {mounted && isLoggedIn && user && profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 10px)',
+                      right: 0,
+                      width: 250,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      background: '#101014',
+                      border: '1px solid rgba(0, 229, 255, 0.2)',
+                      boxShadow: '0 24px 48px rgba(0,0,0,0.8), 0 0 20px rgba(0, 229, 255, 0.1)',
+                      padding: 16,
+                      zIndex: 125,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 10,
+                          background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(168, 85, 247, 0.2))',
+                          border: '1px solid rgba(0, 229, 255, 0.4)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#00e5ff',
+                          fontWeight: 700,
+                          fontSize: 15,
+                        }}
+                      >
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {user.name}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#888899', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                      <Link
+                        href="/profile"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '9px 12px',
+                          borderRadius: 10,
+                          background: 'rgba(255,255,255,0.04)',
+                          color: '#00e5ff',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)')}
+                        onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                      >
+                        <User size={14} /> Account Profile
+                      </Link>
+
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '9px 12px',
+                          borderRadius: 10,
+                          background: 'rgba(255,255,255,0.04)',
+                          color: '#cccccc',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          textDecoration: 'none',
+                          transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                        onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                      >
+                        <Zap size={14} /> Developer Dashboard
+                      </Link>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        logout();
+                        setProfileDropdownOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: '9px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(220,50,50,0.2)',
+                        background: 'rgba(220,50,50,0.08)',
+                        color: '#ff6b6b',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(220,50,50,0.2)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(220,50,50,0.08)')}
+                    >
+                      <LogOut size={13} /> Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Mobile burger */}

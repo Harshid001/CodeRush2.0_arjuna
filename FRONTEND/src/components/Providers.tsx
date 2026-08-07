@@ -11,6 +11,8 @@ import { ProviderStatusProvider } from '@/lib/providerStatus';
 import { ProviderProvider } from '@/context/ProviderContext';
 import { PaymentProvider } from '@/context/PaymentContext';
 
+import { AuthProvider } from '@/context/AuthContext';
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -25,20 +27,22 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <WalletProvider manager={walletManager}>
-      <QueryClientProvider client={queryClient}>
-        <ProviderStatusProvider>
-          <ReceiptProvider>
-            <ProviderProvider>
-              <PaymentProvider>
-                <CompareProvider>
-                  {children}
-                </CompareProvider>
-              </PaymentProvider>
-            </ProviderProvider>
-          </ReceiptProvider>
-        </ProviderStatusProvider>
-      </QueryClientProvider>
-    </WalletProvider>
+    <AuthProvider>
+      <WalletProvider manager={walletManager}>
+        <QueryClientProvider client={queryClient}>
+          <ProviderStatusProvider>
+            <ReceiptProvider>
+              <ProviderProvider>
+                <PaymentProvider>
+                  <CompareProvider>
+                    {children}
+                  </CompareProvider>
+                </PaymentProvider>
+              </ProviderProvider>
+            </ReceiptProvider>
+          </ProviderStatusProvider>
+        </QueryClientProvider>
+      </WalletProvider>
+    </AuthProvider>
   );
 }

@@ -291,3 +291,34 @@ export async function googleAuthBackend(idToken: string): Promise<{ user: Record
 
   return json.data;
 }
+
+export async function fetchUserProfile(): Promise<Record<string, any> | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      cache: "no-store",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success ? json.data : null;
+  } catch (err) {
+    console.warn("[api] Error fetching user profile:", err);
+    return null;
+  }
+}
+
+export async function updateUserProfileBackend(data: { name?: string; walletAddress?: string; avatarUrl?: string }): Promise<Record<string, any> | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success ? json.data : null;
+  } catch (err) {
+    console.warn("[api] Error updating user profile:", err);
+    return null;
+  }
+}

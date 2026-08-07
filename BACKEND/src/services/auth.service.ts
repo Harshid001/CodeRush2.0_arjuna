@@ -173,6 +173,18 @@ export class AuthService {
     return user;
   }
 
+  async updateProfile(userId: string, data: { name?: string; walletAddress?: string; avatarUrl?: string }) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+    if (data.name !== undefined) user.name = data.name.trim();
+    if (data.walletAddress !== undefined) user.walletAddress = data.walletAddress.trim();
+    if (data.avatarUrl !== undefined) user.avatarUrl = data.avatarUrl.trim();
+    await user.save();
+    return user;
+  }
+
   private signToken(userId: string, email: string, role: string): string {
     return jwt.sign({ userId, email, role }, env.JWT_SECRET, { expiresIn: "7d" });
   }
