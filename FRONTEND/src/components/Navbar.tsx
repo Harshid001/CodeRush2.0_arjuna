@@ -515,7 +515,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
               </AnimatePresence>
             </div>
 
-            <Link href="/dashboard">
+            <Link href={mounted && typeof window !== 'undefined' && (localStorage.getItem('auth_token') || localStorage.getItem('token')) ? "/dashboard" : "/login"}>
               <div style={{
                 width: 34, height: 34, borderRadius: 10,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)',

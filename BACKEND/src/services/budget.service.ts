@@ -1,5 +1,4 @@
 import { Budget } from "../models";
-import { ApiError } from "../utils/ApiError";
 
 export class BudgetService {
   async getByUser(userId: string) {

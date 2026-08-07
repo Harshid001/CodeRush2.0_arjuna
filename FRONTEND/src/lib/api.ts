@@ -274,3 +274,20 @@ export async function fetchBackendAnalytics(): Promise<any | null> {
     return null;
   }
 }
+
+export async function googleAuthBackend(idToken: string): Promise<{ user: Record<string, unknown>; token: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/google`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ idToken }),
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || json.error || "Failed to authenticate with Google");
+  }
+
+  return json.data;
+}

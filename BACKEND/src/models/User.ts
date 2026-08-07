@@ -4,7 +4,9 @@ import { generateId } from "../utils/ids";
 export interface IUser {
   _id: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
+  googleId?: string;
+  googleSub?: string;
   name: string;
   avatarUrl?: string;
   role: "developer" | "provider" | "admin";
@@ -18,7 +20,9 @@ const UserSchema = new Schema<IUser>(
   {
     _id: { type: String, default: () => generateId("usr") },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String, required: false },
+    googleId: { type: String, sparse: true, index: true },
+    googleSub: { type: String, sparse: true },
     name: { type: String, required: true, trim: true },
     avatarUrl: { type: String },
     role: { type: String, enum: ["developer", "provider", "admin"], default: "developer" },
@@ -29,5 +33,6 @@ const UserSchema = new Schema<IUser>(
 );
 
 UserSchema.index({ role: 1 });
+UserSchema.index({ googleId: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);

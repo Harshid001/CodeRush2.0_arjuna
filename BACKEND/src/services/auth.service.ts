@@ -49,7 +49,7 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new ApiError(401, "Invalid email or password");
     }
 
@@ -70,6 +70,96 @@ export class AuthService {
         name: user.name,
         role: user.role,
         walletAddress: user.walletAddress,
+        avatarUrl: user.avatarUrl,
+      },
+      token,
+    };
+  }
+
+  async googleAuth(idToken: string) {
+    let payload: { sub?: string; email?: string; name?: string; picture?: string; aud?: string };
+    try {
+      const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+      if (!res.ok) {
+        throw new ApiError(401, "Invalid or expired Google token");
+      }
+      payload = (await res.json()) as { sub?: string; email?: string; name?: string; picture?: string; aud?: string };
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(401, "Failed to verify Google token");
+    }
+
+    if (!payload.sub || !payload.email) {
+      throw new ApiError(401, "Invalid Google token payload");
+    }
+
+    if (env.GOOGLE_CLIENT_ID && payload.aud && payload.aud !== env.GOOGLE_CLIENT_ID) {
+      throw new ApiError(401, "Google token client ID mismatch");
+    }
+
+    const email = payload.email.toLowerCase();
+    const sub = payload.sub;
+
+    let user = await User.findOne({
+      $or: [{ googleId: sub }, { googleSub: sub }, { email }],
+    });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new ApiError(403, "Account is deactivated");
+      }
+      let modified = false;
+      if (!user.googleId) {
+        user.googleId = sub;
+        modified = true;
+      }
+      if (!user.googleSub) {
+        user.googleSub = sub;
+        modified = true;
+      }
+      if (payload.picture && !user.avatarUrl) {
+        user.avatarUrl = payload.picture;
+        modified = true;
+      }
+      if (payload.name && !user.name) {
+        user.name = payload.name;
+        modified = true;
+      }
+      if (modified) {
+        await user.save();
+      }
+    } else {
+      user = await User.create({
+        _id: generateId("usr"),
+        email,
+        googleId: sub,
+        googleSub: sub,
+        name: payload.name || email.split("@")[0],
+        avatarUrl: payload.picture,
+        role: "developer",
+        isActive: true,
+      });
+
+      await Budget.create({
+        userId: user._id,
+        perRequestMax: 5,
+        perProviderDailyMax: 10,
+        dailyMax: 20,
+        minQualityScore: 70,
+        spentToday: 0,
+        spentByProvider: {},
+      });
+    }
+
+    const token = this.signToken(user._id, user.email, user.role);
+    return {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        walletAddress: user.walletAddress,
+        avatarUrl: user.avatarUrl,
       },
       token,
     };

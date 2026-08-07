@@ -23,6 +23,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/v1", apiRoutes);
+app.use("/api", apiRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

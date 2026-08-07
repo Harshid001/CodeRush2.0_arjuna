@@ -9,6 +9,7 @@ export interface AuthPayload {
   role: "developer" | "provider" | "admin";
 }
 
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace Express {
     interface Request {

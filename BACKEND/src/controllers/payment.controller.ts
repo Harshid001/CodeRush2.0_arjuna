@@ -41,7 +41,6 @@ export class PaymentController {
 
       const payment = await paymentService.create({ ...input, userId });
 
-      const startTime = Date.now();
       const inputHash = `hash_in_${payment._id}_${Date.now()}`;
       const outputHash = `hash_out_${payment._id}_${Date.now() + 1}`;
       const latencyMs = Math.floor(Math.random() * 200) + 20;

@@ -14,6 +14,16 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const googleSchema = z
+  .object({
+    idToken: z.string().optional(),
+    credential: z.string().optional(),
+    token: z.string().optional(),
+  })
+  .refine((data) => !!(data.idToken || data.credential || data.token), {
+    message: "Either idToken or credential is required",
+  });
+
 export class AuthController {
   register = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -29,6 +39,17 @@ export class AuthController {
     try {
       const { email, password } = loginSchema.parse(req.body);
       const result = await authService.login(email, password);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  googleAuth = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = googleSchema.parse(req.body);
+      const token = body.idToken || body.credential || body.token;
+      const result = await authService.googleAuth(token!);
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);
