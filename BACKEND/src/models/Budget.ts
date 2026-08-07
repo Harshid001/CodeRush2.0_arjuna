@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export interface IBudget {
   _id: string;
@@ -22,7 +18,7 @@ export interface IBudget {
 
 const BudgetSchema = new Schema<IBudget>(
   {
-    _id: { type: String, default: () => genId("bud") },
+    _id: { type: String, default: () => generateId("bud") },
     userId: { type: String, ref: "User", required: true, unique: true },
     perRequestMax: { type: Number, default: 5 },
     perProviderDailyMax: { type: Number, default: 10 },

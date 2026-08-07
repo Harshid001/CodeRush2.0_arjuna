@@ -98,22 +98,41 @@ export async function createBackendProvider(provider: Omit<Provider, "id">): Pro
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
 /**
  * Fetch user budget policy from Backend
  */
 export async function fetchBackendPolicy(): Promise<PolicyLimits | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/policies`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE_URL}/policies`, {
+      cache: "no-store",
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.success || !json.data) return null;
 
+    const data = Array.isArray(json.data) ? json.data[0] : json.data;
+    if (!data) return null;
+
     return {
-      perRequestMax: json.data.perRequestMax,
-      perProviderDailyMax: json.data.perProviderDailyMax,
-      dailyMax: json.data.dailyMax,
-      minQualityScore: json.data.minQualityScore,
-      allowlist: json.data.allowlist || [],
+      perRequestMax: data.perRequestMax,
+      perProviderDailyMax: data.perProviderDailyMax,
+      dailyMax: data.dailyMax,
+      minQualityScore: data.minQualityScore,
+      allowlist: data.allowlist || [],
     };
   } catch (err) {
     console.warn("[api] Error fetching policy from backend:", err);
@@ -128,9 +147,7 @@ export async function updateBackendPolicy(policy: Partial<PolicyLimits>): Promis
   try {
     const res = await fetch(`${API_BASE_URL}/policies`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(policy),
     });
 
@@ -167,9 +184,7 @@ export async function recordBackendPayment(payload: {
   try {
     const res = await fetch(`${API_BASE_URL}/payments`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         currency: "USD",
         ...payload,
@@ -190,7 +205,10 @@ export async function recordBackendPayment(payload: {
  */
 export async function fetchBackendReceipts(): Promise<Receipt[] | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/receipts`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE_URL}/receipts`, {
+      cache: "no-store",
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.success || !json.data?.receipts) return null;
@@ -244,7 +262,10 @@ export async function fetchBackendReceipts(): Promise<Receipt[] | null> {
  */
 export async function fetchBackendAnalytics(): Promise<any | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/analytics`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE_URL}/analytics/today`, {
+      cache: "no-store",
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return null;
     const json = await res.json();
     return json.success ? json.data : null;

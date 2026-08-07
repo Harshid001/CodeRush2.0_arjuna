@@ -75,11 +75,21 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     setShowLuteAlert(false);
   };
 
+  const copyTimerRef = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef[0]) clearTimeout(copyTimerRef[0]);
+    };
+  }, [copyTimerRef]);
+
   const handleCopyAddress = () => {
     if (activeAddress) {
       navigator.clipboard.writeText(activeAddress);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef[0]) clearTimeout(copyTimerRef[0]);
+      const timer = setTimeout(() => setCopied(false), 2000);
+      copyTimerRef[1](timer);
     }
   };
 

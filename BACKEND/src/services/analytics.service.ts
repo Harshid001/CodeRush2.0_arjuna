@@ -21,20 +21,31 @@ export class AnalyticsService {
       Payment.find({ status: "settled", settledAt: { $gte: startOfDay, $lte: endOfDay } }),
     ]);
 
-    const totalTransactions = payments.length;
-    const totalRevenue = settledPayments.reduce((sum, p) => sum + (p.finalAmount || p.amount), 0);
-    const failedTransactions = payments.filter((p) => p.status === "failed").length;
-    const blockedTransactions = payments.filter((p) => p.status === "failed").length;
-    const successRate = totalTransactions > 0 ? ((totalTransactions - failedTransactions) / totalTransactions) * 100 : 0;
+    const safePayments = payments || [];
+    const safeSettled = settledPayments || [];
 
-    const avgLatency = settledPayments.length > 0
-      ? settledPayments.reduce((sum, p) => sum + (p.latencyMs || 0), 0) / settledPayments.length
-      : 0;
+    const totalTransactions = safePayments.length;
+    const totalRevenue = safeSettled.reduce((sum, p) => {
+      const val = Number(p.finalAmount ?? p.amount);
+      return sum + (Number.isFinite(val) ? val : 0);
+    }, 0);
+
+    const failedTransactions = safePayments.filter((p) => p.status === "failed").length;
+    const blockedTransactions = safePayments.filter((p) => p.status === "refunded").length;
+
+    const rawSuccessRate = totalTransactions > 0 ? ((totalTransactions - failedTransactions) / totalTransactions) * 100 : 0;
+    const successRate = Number.isFinite(rawSuccessRate) ? Math.max(0, Math.min(100, rawSuccessRate)) : 0;
+
+    const totalLatency = safeSettled.reduce((sum, p) => sum + (Number(p.latencyMs) || 0), 0);
+    const avgLatency = safeSettled.length > 0 ? totalLatency / safeSettled.length : 0;
+    const safeAvgLatency = Number.isFinite(avgLatency) ? avgLatency : 0;
 
     const revenueByProvider = new Map<string, number>();
-    for (const p of settledPayments) {
+    for (const p of safeSettled) {
+      if (!p.providerId) continue;
+      const val = Number(p.finalAmount ?? p.amount) || 0;
       const current = revenueByProvider.get(p.providerId) || 0;
-      revenueByProvider.set(p.providerId, current + (p.finalAmount || p.amount));
+      revenueByProvider.set(p.providerId, current + val);
     }
 
     const topProvidersData = Array.from(revenueByProvider.entries())
@@ -73,7 +84,7 @@ export class AnalyticsService {
         totalProviders: providers,
         revenueByProvider,
         transactionsByCategory,
-        avgLatencyMs: avgLatency,
+        avgLatencyMs: safeAvgLatency,
         successRate,
         failedTransactions,
         blockedTransactions,

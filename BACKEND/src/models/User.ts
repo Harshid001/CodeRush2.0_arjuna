@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export interface IUser {
   _id: string;
@@ -20,7 +16,7 @@ export interface IUser {
 
 const UserSchema = new Schema<IUser>(
   {
-    _id: { type: String, default: () => genId("usr") },
+    _id: { type: String, default: () => generateId("usr") },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     name: { type: String, required: true, trim: true },

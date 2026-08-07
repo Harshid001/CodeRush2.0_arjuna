@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export type PaymentScheme = "exact" | "upto";
 export type ProviderCategory = "LLM & NLP" | "Computer Vision" | "Financial & Market Data" | "Code & DevTools" | "Audio & Speech" | "Web Scraping";
@@ -32,7 +28,7 @@ export interface IProvider {
 
 const ProviderSchema = new Schema<IProvider>(
   {
-    _id: { type: String, default: () => genId("p") },
+    _id: { type: String, default: () => generateId("p") },
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     category: {

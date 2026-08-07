@@ -15,52 +15,6 @@ const FACILITATOR_FEE_PAYER =
   process.env.FACILITATOR_FEE_PAYER ||
   "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA";
 
-const facilitatorClient = new HTTPFacilitatorClient({
-  url: FACILITATOR_URL,
-});
-
-let lastSettledTxId: string | null = null;
-
-const originalVerify = facilitatorClient.verify.bind(facilitatorClient);
-facilitatorClient.verify = async (payload: any, requirements: any) => {
-  console.log("[x402 Facilitator] [HOP 6 - VERIFY REQUEST]", {
-    facilitatorUrl: FACILITATOR_URL,
-    payload,
-    requirements,
-  });
-  try {
-    const res = await originalVerify(payload, requirements);
-    console.log("[x402 Facilitator] [HOP 6 - VERIFY RESPONSE RAW]", JSON.stringify(res, null, 2));
-    return res;
-  } catch (err: any) {
-    console.error("[x402 Facilitator] [HOP 6 - VERIFY ERROR RAW]", err);
-    throw err;
-  }
-};
-
-const originalSettle = facilitatorClient.settle.bind(facilitatorClient);
-facilitatorClient.settle = async (payload: any, requirements: any) => {
-  console.log("[x402 Facilitator] [HOP 6 - SETTLE REQUEST]", {
-    facilitatorUrl: FACILITATOR_URL,
-    payload,
-    requirements,
-  });
-  try {
-    const res = await originalSettle(payload, requirements);
-    console.log("[x402 Facilitator] [HOP 6 - SETTLE RESPONSE RAW]", JSON.stringify(res, null, 2));
-    if (res && res.transaction) {
-      lastSettledTxId = res.transaction;
-    }
-    return res;
-  } catch (err: any) {
-    console.error("[x402 Facilitator] [HOP 6 - SETTLE ERROR RAW]", err);
-    throw err;
-  }
-};
-
-const server = new x402ResourceServer(facilitatorClient);
-registerExactAvmScheme(server);
-
 const DEFAULT_PAY_TO = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
 
 export async function GET(
@@ -72,34 +26,32 @@ export async function GET(
   const provider = INITIAL_PROVIDERS.find((p) => p.id === providerId) || INITIAL_PROVIDERS[0];
   const payTo = process.env.RESOURCE_PAY_TO || provider.payToAddress || DEFAULT_PAY_TO;
 
-  const paymentHeader =
-    request.headers.get("authorization") ||
-    request.headers.get("payment-signature") ||
-    request.headers.get("x-payment");
+  let requestSettledTxId: string | null = null;
 
-  console.log(`[x402 Server] [HOP 4 & 5] Incoming request for ${providerId}:`, {
-    method: request.method,
-    url: request.url,
-    hasPaymentHeader: !!paymentHeader,
-    paymentHeaderSnippet: paymentHeader ? `${paymentHeader.slice(0, 50)}...` : null,
-    acceptsRequirements: {
-      scheme: "exact",
-      network: ALGORAND_TESTNET_CAIP2,
-      payTo,
-      price: `$${provider.price.toFixed(4)}`,
-      extra: {
-        feePayer: FACILITATOR_FEE_PAYER,
-      },
-    },
-  });
+  const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR_URL });
+  const originalSettle = facilitatorClient.settle.bind(facilitatorClient);
+  facilitatorClient.settle = async (payload: any, requirements: any) => {
+    try {
+      const res = await originalSettle(payload, requirements);
+      if (res && res.transaction) {
+        requestSettledTxId = res.transaction;
+      }
+      return res;
+    } catch (err: any) {
+      console.error("[x402 Facilitator] Settle error:", err);
+      throw err;
+    }
+  };
 
-  const baseHandler = async (req: NextRequest) => {
-    console.log(`[x402 Server] [HOP 7] BaseHandler executing for ${providerId} after payment verification`);
+  const server = new x402ResourceServer(facilitatorClient);
+  registerExactAvmScheme(server);
+
+  const baseHandler = async (_req: NextRequest) => {
     return NextResponse.json({
       success: true,
       providerId: provider.id,
       name: provider.name,
-      paymentSettlement: lastSettledTxId || "avm_atomic_group_settled",
+      paymentSettlement: requestSettledTxId || "avm_atomic_group_settled",
       result: {
         status: 200,
         executedAt: new Date().toISOString(),
@@ -130,39 +82,25 @@ export async function GET(
   );
 
   try {
-    lastSettledTxId = null;
     const res = await protectedHandler(request);
-    
-    // Ensure CORS Expose Headers allow browser client access to x402 settlement headers
+
     res.headers.set(
       "Access-Control-Expose-Headers",
       "PAYMENT-RESPONSE, payment-response, X-PAYMENT-SETTLEMENT, x-payment-settlement, PAYMENT-REQUIRED, payment-required, *"
     );
     res.headers.set("Access-Control-Allow-Origin", "*");
 
-    if (lastSettledTxId) {
-      res.headers.set("x-payment-settlement", lastSettledTxId);
-      res.headers.set("X-PAYMENT-SETTLEMENT", lastSettledTxId);
+    if (requestSettledTxId) {
+      res.headers.set("x-payment-settlement", requestSettledTxId);
+      res.headers.set("X-PAYMENT-SETTLEMENT", requestSettledTxId);
     }
 
-    const prHeader =
-      res.headers.get("PAYMENT-RESPONSE") ||
-      res.headers.get("payment-response") ||
-      res.headers.get("x-payment-settlement") ||
-      res.headers.get("X-PAYMENT-SETTLEMENT");
-
-    console.log(`[x402 Server] [HOP 7] protectedHandler completed with status ${res.status}:`, {
-      paymentResponseHeader: prHeader,
-      lastSettledTxId,
-      allHeaders: Object.fromEntries(res.headers.entries()),
-    });
     return res;
   } catch (err: any) {
-    console.error(`[x402 Server] [HOP 7 ERROR] protectedHandler threw exception:`, err);
+    console.error(`[x402 Server ERROR] Exception during provider execution:`, err);
     return NextResponse.json(
       {
         error: err?.message || "Internal Server Error during x402 payment handling",
-        stack: process.env.NODE_ENV === "development" ? err?.stack : undefined,
       },
       { status: 500 }
     );

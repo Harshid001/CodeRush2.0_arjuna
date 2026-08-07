@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export type TransactionStatus = "pending" | "success" | "failed" | "blocked";
 
@@ -56,7 +52,7 @@ const TraceStepSchema = new Schema<ITraceStep>(
 
 const TransactionSchema = new Schema<ITransaction>(
   {
-    _id: { type: String, default: () => genId("txn") },
+    _id: { type: String, default: () => generateId("txn") },
     traceId: { type: String, required: true, unique: true },
     userId: { type: String, ref: "User", required: true },
     providerId: { type: String, ref: "Provider", required: true },

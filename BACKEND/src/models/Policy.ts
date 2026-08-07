@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export type PolicyType = "allowlist" | "quality_threshold" | "per_request_cap" | "per_provider_daily" | "daily_max";
 export type PolicyAction = "block" | "flag" | "approve";
@@ -23,7 +19,7 @@ export interface IPolicy {
 
 const PolicySchema = new Schema<IPolicy>(
   {
-    _id: { type: String, default: () => genId("pol") },
+    _id: { type: String, default: () => generateId("pol") },
     userId: { type: String, ref: "User", required: true },
     name: { type: String, required: true, trim: true },
     type: {

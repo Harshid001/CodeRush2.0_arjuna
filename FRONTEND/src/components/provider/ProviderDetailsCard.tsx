@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Globe, Lock, Network, Zap, Check, Server } from 'lucide-react';
+import { Lock, Network } from 'lucide-react';
 import type { MarketplaceApi } from '@/lib/data/marketplaceApis';
 
 interface ProviderDetailsCardProps {

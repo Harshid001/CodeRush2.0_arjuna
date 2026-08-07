@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export interface IPayment {
   _id: string;
@@ -30,7 +26,7 @@ export interface IPayment {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    _id: { type: String, default: () => genId("pay") },
+    _id: { type: String, default: () => generateId("pay") },
     providerId: { type: String, ref: "Provider", required: true },
     userId: { type: String, ref: "User", required: true },
     amount: { type: Number, required: true, min: 0 },

@@ -1,13 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { MarketplaceApi } from '@/lib/data/marketplaceApis';
 
 const MAX_COMPARE = 3;
+const STORAGE_KEY = 'x402_compare_list';
 
 interface CompareContextType {
     compareList: MarketplaceApi[];
-    addToCompare: (api: MarketplaceApi) => boolean; // returns false if already 3
+    addToCompare: (api: MarketplaceApi) => boolean;
     removeFromCompare: (id: string) => void;
     clearCompare: () => void;
     isInCompare: (id: string) => boolean;
@@ -18,8 +19,38 @@ const CompareContext = createContext<CompareContextType | undefined>(undefined);
 
 export function CompareProvider({ children }: { children: ReactNode }) {
     const [compareList, setCompareList] = useState<MarketplaceApi[]>([]);
+    const [initialized, setInitialized] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const saved = sessionStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    const validList = parsed.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string');
+                    setCompareList(validList.slice(0, MAX_COMPARE));
+                }
+            }
+        } catch (e) {
+            console.warn('[CompareContext] Failed to parse compare list from sessionStorage:', e);
+        } finally {
+            setInitialized(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!initialized || typeof window === 'undefined') return;
+        try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(compareList));
+        } catch (e) {
+            console.warn('[CompareContext] Failed to persist compare list to sessionStorage:', e);
+        }
+    }, [compareList, initialized]);
 
     const addToCompare = useCallback((api: MarketplaceApi): boolean => {
+        if (!api || !api.id || typeof api.name !== 'string') return false;
+
         let added = false;
         setCompareList(prev => {
             if (prev.length >= MAX_COMPARE) return prev;

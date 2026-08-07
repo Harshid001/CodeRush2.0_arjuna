@@ -43,7 +43,7 @@ const providerSchema = z.object({
         'Must be valid JSON'
     ),
     tags: z.array(z.string()),
-    termsAccepted: z.literal(true, { errorMap: () => ({ message: 'You must accept the terms' }) }),
+    termsAccepted: z.boolean().refine((val) => val === true, { message: 'You must accept the terms' }),
 });
 
 type FormValues = z.infer<typeof providerSchema>;
@@ -106,7 +106,6 @@ const gridStyle = (cols: number): React.CSSProperties => ({
 /* ─── Component ─── */
 interface ProviderRegistrationFormProps {
     onSubmit: (provider: Provider) => void;
-    onWatch?: (watch: UseFormWatch<FormValues>) => void;
     renderPreview?: (values: FormValues) => React.ReactNode;
 }
 
@@ -145,7 +144,7 @@ export default function ProviderRegistrationForm({
             inputSchema: '{\n  "prompt": "string"\n}',
             outputSchema: '{\n  "result": "string",\n  "confidence": "number"\n}',
             tags: [],
-            termsAccepted: false as unknown as true,
+            termsAccepted: false,
         },
     });
 

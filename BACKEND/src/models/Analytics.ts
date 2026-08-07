@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export interface IAnalytics {
   _id: string;
@@ -25,7 +21,7 @@ export interface IAnalytics {
 
 const AnalyticsSchema = new Schema<IAnalytics>(
   {
-    _id: { type: String, default: () => genId("ana") },
+    _id: { type: String, default: () => generateId("ana") },
     date: { type: String, required: true, unique: true },
     totalTransactions: { type: Number, default: 0 },
     totalRevenue: { type: Number, default: 0 },

@@ -1,9 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import crypto from "node:crypto";
-
-function genId(prefix: string) {
-  return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
-}
+import mongoose, { Schema } from "mongoose";
+import { generateId } from "../utils/ids";
 
 export interface IReceipt {
   _id: string;
@@ -31,7 +27,7 @@ export interface IReceipt {
 
 const ReceiptSchema = new Schema<IReceipt>(
   {
-    _id: { type: String, default: () => genId("rct") },
+    _id: { type: String, default: () => generateId("rct") },
     receiptId: { type: String, required: true, unique: true },
     paymentId: { type: String, ref: "Payment", required: true },
     userId: { type: String, ref: "User", required: true },
