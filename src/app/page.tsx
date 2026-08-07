@@ -170,6 +170,27 @@ export default function Home() {
 
   return (
     <div style={{ background: '#050505', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+
+      {/* ── HIGH-END ETHEREAL FLUID BACKGROUND IMAGE ─────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '110vh',
+          backgroundImage: `url('/hero-bg.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.45,
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+
       <Stars />
       <Navbar hideLinks={true} />
 
@@ -179,7 +200,7 @@ export default function Home() {
         <div style={{
           position: 'absolute', top: '0', left: '50%', transform: 'translateX(-50%)',
           width: 800, height: 500, borderRadius: '50%', pointerEvents: 'none',
-          background: 'radial-gradient(ellipse, rgba(80,100,200,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(80,100,200,0.08) 0%, transparent 70%)',
           filter: 'blur(40px)',
         }} />
 
@@ -192,101 +213,151 @@ export default function Home() {
               {/* pill badge */}
               <motion.div {...fadeUp(0)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 32 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3d8a3d', display: 'block', boxShadow: '0 0 8px rgba(60,140,60,0.8)' }} />
-                <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#555' }}>Now live — 12,000+ APIs · 800+ providers</span>
+                <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#666' }}>Now live — 12,000+ APIs · 800+ providers</span>
               </motion.div>
 
               {/* Headline */}
               <motion.h1 {...fadeUp(0.1)} style={{
                 fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600,
-                fontSize: 'clamp(2.8rem, 5vw, 4.2rem)', color: '#efefef',
-                letterSpacing: '-0.03em', lineHeight: 1.07, marginBottom: 22,
+                fontSize: 'clamp(2.6rem, 4.8vw, 4.2rem)', color: '#ffffff',
+                letterSpacing: '-0.03em', lineHeight: 1.08, marginBottom: 24,
               }}>
-                The marketplace
-                <br />
-                <em style={{ fontStyle: 'italic', color: '#888' }}>intelligence</em> runs on.
+                The Premier Marketplace for <span style={{ color: '#d8d8d8', fontStyle: 'italic', fontWeight: 400 }}>AI & Data APIs</span>
               </motion.h1>
 
-              {/* sub */}
-              <motion.p {...fadeUp(0.2)} style={{ ...S.body, maxWidth: 420, marginBottom: 36 }}>
-                Discover, compare, and purchase enterprise-grade AI and Data APIs.
-                Pay per request or set usage caps — with blockchain-verified receipts and zero overhead.
+              {/* Subheadline */}
+              <motion.p {...fadeUp(0.2)} style={{ ...S.body, maxWidth: 480, marginBottom: 40, color: '#888' }}>
+                Discover, integrate, and monetize next-generation APIs. Pay-per-request billing backed by smart contracts, transparent SLAs, and zero friction.
               </motion.p>
 
               {/* CTAs */}
-              <motion.div {...fadeUp(0.3)} style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <Link href="/marketplace" className="btn-primary">
-                  Explore APIs <ArrowRight size={15} strokeWidth={2.5} />
+              <motion.div {...fadeUp(0.3)} style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <Link href="/marketplace" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '14px 28px', borderRadius: 13,
+                  background: '#f0f0f0', color: '#050505',
+                  fontFamily: 'Inter', fontWeight: 600, fontSize: 14, textDecoration: 'none',
+                  boxShadow: '0 4px 24px rgba(255,255,255,0.12)', transition: 'all 0.25s ease',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
+                >
+                  Explore Marketplace <ArrowRight size={15} />
                 </Link>
-                <Link href="/dashboard" className="btn-ghost">
+
+                <Link href="/dashboard" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '14px 24px', borderRadius: 13,
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#999', fontFamily: 'Inter', fontWeight: 500, fontSize: 14, textDecoration: 'none',
+                  transition: 'all 0.25s ease',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLAnchorElement).style.color = '#e0e0e0'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#999'; }}
+                >
                   View Dashboard
                 </Link>
               </motion.div>
-
-              {/* micro stats */}
-              <motion.div {...fadeUp(0.45)} style={{ display: 'flex', gap: 36, marginTop: 48, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                {[{ v:'12K+', l:'APIs' }, { v:'800+', l:'Providers' }, { v:'$2.4M', l:'Paid out' }, { v:'99.9%', l:'Uptime' }].map(s => (
-                  <div key={s.l}>
-                    <div style={{ fontFamily: 'Inter', fontSize: 20, fontWeight: 700, color: '#ddd', letterSpacing: '-0.03em' }}>{s.v}</div>
-                    <div style={{ fontFamily: 'Inter', fontSize: 12, color: '#3a3a3a', marginTop: 2 }}>{s.l}</div>
-                  </div>
-                ))}
-              </motion.div>
             </div>
 
-            {/* Right — dashboard mockup */}
-            <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 60 }}>
+            {/* Right: Mockup */}
+            <motion.div {...fadeUp(0.25)} style={{ display: 'flex', justifyContent: 'center' }}>
               <MockDashboard />
             </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* ── TRUST ─────────────────────────────────────────────────────────── */}
-      <section style={{ ...S.section, padding: '60px 0 80px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
-          <p style={{ ...S.label, textAlign: 'center', marginBottom: 40 }}>Trusted by leading AI teams</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 48, alignItems: 'center' }}>
-            {['Anthropic','Mistral','Cohere','Replicate','Hugging Face','Together AI','Groq','Perplexity'].map(name => (
-              <span key={name}
-                style={{ fontFamily: 'Inter', fontSize: 16, fontWeight: 500, color: '#222', letterSpacing: '-0.01em', cursor: 'default', transition: 'color 0.3s, transform 0.3s', display: 'block' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.color = '#666'; (e.currentTarget as HTMLSpanElement).style.transform = 'scale(1.06)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.color = '#222'; (e.currentTarget as HTMLSpanElement).style.transform = 'scale(1)'; }}>
-                {name}
-              </span>
+      {/* ── STATS BAR ────────────────────────────────────────────────────── */}
+      <section style={{ ...S.section, borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.015)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }} className="grid-cols-2 lg:grid-cols-4">
+            {[
+              { val: '12,000+', lbl: 'Active APIs' },
+              { val: '$14.2M+',  lbl: 'Volume Settled' },
+              { val: '99.99%',   lbl: 'Network Uptime' },
+              { val: '<18ms',    lbl: 'Avg Response' },
+            ].map((st, i) => (
+              <motion.div key={st.lbl} {...fadeUp(i * 0.08)} style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontWeight: 600, color: '#f0f0f0', letterSpacing: '-0.03em', marginBottom: 4 }}>
+                  {st.val}
+                </div>
+                <div style={{ fontFamily: 'Inter', fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {st.lbl}
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FEATURES ──────────────────────────────────────────────────────── */}
-      <section style={{ ...S.section, padding: '100px 0' }}>
+      {/* ── FEATURES ─────────────────────────────────────────────────────── */}
+      <section style={{ ...S.section, padding: '120px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
-            <p style={{ ...S.label, marginBottom: 14 }}>Platform Capabilities</p>
-            <h2 style={{ ...S.h2, maxWidth: 500 }}>Everything you need<br />to build with AI</h2>
-          </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <motion.p {...fadeUp(0)} style={{ ...S.label, marginBottom: 12 }}>Platform Capabilities</motion.p>
+            <motion.h2 {...fadeUp(0.1)} style={{ ...S.h2, maxWidth: 560, margin: '0 auto' }}>
+              Built for High-Scale API Architecture
+            </motion.h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }} className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {feats.map((f, i) => (
-              <motion.div key={f.title}
-                initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ duration: 0.55, delay: i * 0.07 }}
+              <motion.div key={f.title} {...fadeUp(i * 0.07)}
                 className="card-hover"
                 style={{
-                  padding: '28px 26px', borderRadius: 20,
-                  background: 'linear-gradient(145deg, rgba(22,22,26,0.9) 0%, rgba(12,12,14,0.9) 100%)',
+                  padding: '32px 28px', borderRadius: 20,
+                  background: 'linear-gradient(155deg, rgba(18,18,22,0.95) 0%, rgba(10,10,12,0.95) 100%)',
                   border: '1px solid rgba(255,255,255,0.07)',
-                  boxShadow: '0 2px 24px rgba(0,0,0,0.4)',
+                  display: 'flex', flexDirection: 'column', gap: 16,
                 }}>
                 <div style={{
-                  width: 42, height: 42, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 20,
+                  width: 42, height: 42, borderRadius: 12,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <f.icon size={19} color="#999" />
+                  <f.icon size={18} color="#aaa" />
                 </div>
-                <h3 style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#d8d8d8', marginBottom: 10 }}>{f.title}</h3>
-                <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#4a4a4a', lineHeight: 1.75 }}>{f.desc}</p>
+                <h3 style={{ fontFamily: 'Inter', fontSize: 16, fontWeight: 600, color: '#e8e8e8', letterSpacing: '-0.01em' }}>
+                  {f.title}
+                </h3>
+                <p style={{ ...S.body, fontSize: 14 }}>
+                  {f.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ──────────────────────────────────────────────────── */}
+      <section style={{ ...S.section, padding: '0 0 120px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <motion.p {...fadeUp(0)} style={{ ...S.label, marginBottom: 12 }}>Trusted by Builders</motion.p>
+            <motion.h2 {...fadeUp(0.1)} style={{ ...S.h2 }}>What Engineering Teams Say</motion.h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }} className="grid-cols-1 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <motion.div key={t.name} {...fadeUp(i * 0.09)} style={{
+                padding: '32px 28px', borderRadius: 20,
+                background: 'rgba(14,14,16,0.95)', border: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24,
+              }}>
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {[...Array(5)].map((_, k) => <Star key={k} size={12} color="#aaa" fill="#aaa" />)}
+                </div>
+                <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#777', lineHeight: 1.7, fontStyle: 'italic' }}>
+                  {t.q}
+                </p>
+                <div>
+                  <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: '#d8d8d8' }}>{t.name}</div>
+                  <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#3a3a3a', marginTop: 2 }}>{t.role}</div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -294,63 +365,44 @@ export default function Home() {
       </section>
 
       {/* ── CTA BANNER ────────────────────────────────────────────────────── */}
-      <section style={{ ...S.section, padding: '80px 0 100px' }}>
+      <section style={{ ...S.section, padding: '0 0 120px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+          <motion.div {...fadeUp(0)} style={{
+            borderRadius: 28, padding: '72px 48px', textAlign: 'center',
+            background: 'linear-gradient(135deg, rgba(22,22,30,0.98) 0%, rgba(10,10,14,0.98) 100%)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+            position: 'relative', overflow: 'hidden',
+          }}>
             <div style={{
-              position: 'relative', borderRadius: 28, padding: '80px 60px', textAlign: 'center', overflow: 'hidden',
-              background: 'linear-gradient(145deg, rgba(20,20,26,0.95) 0%, rgba(10,10,12,0.95) 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 4px 80px rgba(0,0,0,0.6)',
-            }}>
-              {/* inner glow */}
-              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 60% at 50% 0%, rgba(80,100,200,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <p style={{ ...S.label, marginBottom: 20 }}>Get Started Today</p>
-                <h2 style={{ ...S.h2, fontSize: 'clamp(2rem, 3.5vw, 3rem)', marginBottom: 18 }}>
-                  Start building with the<br />
-                  <em style={{ color: '#666', fontStyle: 'italic' }}>world&apos;s best APIs</em>
-                </h2>
-                <p style={{ ...S.body, maxWidth: 400, margin: '0 auto 36px', color: '#444' }}>
-                  Join 40,000+ developers and enterprises powering their AI stack with NexusAPI.
-                </p>
-                <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <Link href="/marketplace" className="btn-primary">
-                    Browse Marketplace <ArrowRight size={14} />
-                  </Link>
-                  <Link href="/dashboard" className="btn-ghost">
-                    View Dashboard
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+              position: 'absolute', top: '-50%', left: '50%', transform: 'translateX(-50%)',
+              width: 600, height: 400, borderRadius: '50%', pointerEvents: 'none',
+              background: 'radial-gradient(ellipse, rgba(160,185,255,0.06) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+            }} />
 
-      {/* ── TESTIMONIALS ──────────────────────────────────────────────────── */}
-      <section style={{ ...S.section, padding: '20px 0 100px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }} className="grid-cols-1 md:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <motion.div key={t.name}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }}
-                style={{
-                  padding: '28px 26px', borderRadius: 20,
-                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                <div style={{ display: 'flex', gap: 2, marginBottom: 18 }}>
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={11} fill="#3a3a3a" color="#3a3a3a" />)}
-                </div>
-                <p style={{ fontFamily: 'Inter', fontSize: 13.5, color: '#555', lineHeight: 1.8, fontStyle: 'italic', marginBottom: 20 }}>{t.q}</p>
-                <div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: '#888' }}>{t.name}</div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 12, color: '#333', marginTop: 2 }}>{t.role}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+            <motion.p {...fadeUp(0.1)} style={{ ...S.label, marginBottom: 16 }}>Start in Minutes</motion.p>
+            <motion.h2 {...fadeUp(0.2)} style={{ ...S.h2, fontSize: 'clamp(2.2rem, 3.8vw, 3.2rem)', marginBottom: 20 }}>
+              Ready to Accelerate Your API Ecosystem?
+            </motion.h2>
+            <motion.p {...fadeUp(0.3)} style={{ ...S.body, maxWidth: 500, margin: '0 auto 40px', color: '#888' }}>
+              Join thousands of developers and teams leveraging NexusAPI for seamless discovery, billing, and analytics.
+            </motion.p>
+            <motion.div {...fadeUp(0.4)}>
+              <Link href="/marketplace" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '16px 36px', borderRadius: 14,
+                background: '#f0f0f0', color: '#050505',
+                fontFamily: 'Inter', fontWeight: 600, fontSize: 15, textDecoration: 'none',
+                boxShadow: '0 4px 24px rgba(255,255,255,0.14)', transition: 'all 0.25s ease',
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)'; }}
+              >
+                Browse Marketplace <ArrowRight size={16} />
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
