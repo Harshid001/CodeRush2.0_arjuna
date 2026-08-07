@@ -14,6 +14,7 @@ import { generateId, hashString } from "../utils";
 export interface RequestPaidResourceOptions {
   activeAccount?: any;
   signTransactions?: any;
+  onPaymentIdAssigned?: (paymentId: string) => void;
   forceDisappear?: boolean;
   forcePriceChange?: boolean;
   forceMalformed402?: boolean;
@@ -27,11 +28,38 @@ export interface RequestPaidResourceOptions {
 /**
  * Creates an x402-wrapped fetch instance configured with the connected Algorand wallet signer.
  */
-export function createPaidFetch(activeAccount: any, signTransactions: any) {
+export function createPaidFetch(activeAccount: any, signTransactions: any, onPaymentIdAssigned?: (paymentId: string) => void) {
   if (!activeAccount || !signTransactions) {
     console.warn("[x402 Client] createPaidFetch called without activeAccount or signTransactions — falling back to raw fetch.");
     return fetch;
   }
+
+  let currentPaymentId: string | null = null;
+
+  const maskAddress = (addr?: string) => {
+    if (!addr || typeof addr !== "string") return "unknown_address";
+    if (addr.length <= 10) return addr;
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  const reportClientEvent = async (stage: string, title: string, description: string, details: Record<string, unknown> = {}) => {
+    if (!currentPaymentId) return;
+    try {
+      await fetch("/api/payments/client-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: currentPaymentId,
+          stage,
+          title,
+          description,
+          details,
+        }),
+      });
+    } catch (e) {
+      // Ignore background client event logging errors
+    }
+  };
 
   let signer: ClientAvmSigner;
   if (typeof activeAccount === "string") {
@@ -40,36 +68,72 @@ export function createPaidFetch(activeAccount: any, signTransactions: any) {
     signer = {
       address: activeAccount.address,
       signTransactions: async (txns: Uint8Array[], indexesToSign?: number[]) => {
-        console.log("[x402 Client] [HOP 2] Signing AVM transaction group via Lute Wallet:", {
-          signerAddress: activeAccount.address,
-          txnsCount: txns.length,
-          indexesToSign,
-          txnsHexPreview: txns.map((t) =>
-            Array.from(t.slice(0, 16))
-              .map((b) => b.toString(16).padStart(2, "0"))
-              .join("")
-          ),
-        });
+        // Stage 2: signature_requested (client-reported)
+        await reportClientEvent(
+          "signature_requested",
+          "Lute Wallet Signing Requested",
+          `Prompted Lute Wallet to sign ${txns.length} AVM transactions.`,
+          {
+            signerAddress: maskAddress(activeAccount.address),
+            txnsCount: txns.length,
+            indexesToSign,
+          }
+        );
+
         try {
           const signedResults = await signTransactions(txns, indexesToSign);
-          console.log("[x402 Client] [HOP 2] AVM transaction group signed successfully:", {
-            signedCount: signedResults ? signedResults.length : 0,
-            signedByteSizes: signedResults
-              ? signedResults.map((r: any) => (r ? `${r.length} bytes` : "null (unsigned fee payer)"))
-              : null,
-          });
+
+          // Stage 3: signature_received (client-reported, address masked)
+          await reportClientEvent(
+            "signature_received",
+            "Lute Wallet Signature Received",
+            `Received ${signedResults ? signedResults.length : 0} signed transaction blobs from Lute.`,
+            {
+              signerAddress: maskAddress(activeAccount.address),
+              signedCount: signedResults ? signedResults.length : 0,
+            }
+          );
+
           return signedResults;
-        } catch (err) {
-          console.error("[x402 Client] [HOP 2] Lute Wallet signing REJECTED or FAILED:", err);
+        } catch (err: any) {
+          await reportClientEvent(
+            "final_state",
+            "Lute Wallet Signing Rejected",
+            err?.message || "User rejected signature in Lute Wallet",
+            { status: "failed", error: err?.message }
+          );
           throw err;
         }
       },
     };
   }
 
+  const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const customInit = { ...init };
+    const headers = new Headers(customInit.headers || {});
+
+    if (currentPaymentId) {
+      headers.set("x-payment-id", currentPaymentId);
+    }
+    customInit.headers = headers;
+
+    const response = await fetch(input, customInit);
+
+    // Extract paymentId from HTTP 402 challenge header
+    const pid = response.headers.get("x-payment-id") || response.headers.get("X-PAYMENT-ID");
+    if (pid) {
+      currentPaymentId = pid;
+      if (onPaymentIdAssigned) {
+        onPaymentIdAssigned(pid);
+      }
+    }
+
+    return response;
+  };
+
   const client = new x402Client();
   registerExactAvmScheme(client, { signer });
-  return wrapFetchWithPayment(fetch, client);
+  return wrapFetchWithPayment(customFetch, client);
 }
 
 export async function requestPaidResource(
@@ -178,7 +242,7 @@ export async function requestPaidResource(
     let fetchFn = fetch;
 
     if (options.activeAccount && options.signTransactions) {
-      fetchFn = createPaidFetch(options.activeAccount, options.signTransactions);
+      fetchFn = createPaidFetch(options.activeAccount, options.signTransactions, options.onPaymentIdAssigned);
       traceBuilder.addStep(
         "PAYLOAD_SIGNING",
         "Lute Wallet AVM Signer Configured",

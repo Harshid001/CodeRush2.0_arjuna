@@ -30,3 +30,7 @@ yarn-error.log*
 # local env files
 .env*
 !.env.example
+
+# provenance store data
+.data/
+
