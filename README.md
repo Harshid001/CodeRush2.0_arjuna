@@ -9,7 +9,7 @@
 [![Hackathon](https://img.shields.io/badge/Hackathon-x402%20Payment%20Layer-orange.svg?style=for-the-badge&logo=trophy)](https://github.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black.svg?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Base Sepolia](https://img.shields.io/badge/Base-Sepolia%20Simulated-0052FF.svg?style=for-the-badge&logo=ethereum)](https://base.org)
+[![Algorand TestNet](https://img.shields.io/badge/Algorand-TestNet%20Live-000000.svg?style=for-the-badge&logo=algorand)](https://algorand.co)
 [![Protocol](https://img.shields.io/badge/Protocol-x402%20HTTP-8A2BE2.svg?style=for-the-badge)](https://x402.org)
 
 ---
@@ -585,10 +585,10 @@ interface PaymentPayload {
 
 ---
 
-## 🦊 MetaMask & Web3 Integration (Current vs Future)
+## 🔑 Lute Wallet & Algorand Web3 Integration
 
-- **Current Implementation**: Deterministic simulated key signing (`sim_key_...` and `sim_sig_...`) without prompting wallet popups or spending live gas.
-- **Future Production Integration**: Users will connect MetaMask or embedded Smart Wallets to sign EIP-712 payment authorization payloads, settling on Base Sepolia smart contracts via facilitator RPC calls.
+- **Current Implementation**: Integrated `@txnlab/use-wallet-react` with Lute Wallet on Algorand TestNet (`testnet`).
+- **Production Integration**: Users connect Lute Wallet to sign AVM payment transactions settling on Algorand TestNet via `@txnlab/use-wallet`.
 
 ---
 

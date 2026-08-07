@@ -59,8 +59,8 @@ export default function Footer() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {items.map(item => (
                   <Link key={item} href="#" style={{ fontFamily: 'Inter', fontSize: 13, color: '#444', textDecoration: 'none', transition: 'color 0.2s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#888'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#444'; }}>
+                    onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.color = '#888'; }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.color = '#444'; }}>
                     {item}
                   </Link>
                 ))}

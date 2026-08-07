@@ -1,13 +1,1 @@
-import { createConfig, http } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
-
-export const config = createConfig({
-  chains: [baseSepolia],
-  connectors: [
-    injected(),
-  ],
-  transports: {
-    [baseSepolia.id]: http('https://sepolia.base.org'),
-  },
-});
+// Ethereum wagmi configuration removed. Replaced by Algorand wallet manager in walletManager.ts.

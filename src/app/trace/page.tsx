@@ -47,7 +47,7 @@ export default function TracePage() {
             </h1>
             <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#555555', maxWidth: 620, lineHeight: 1.6 }}>
               Real-time audit log of agent API invocations showing HTTP 402 payment negotiation,
-              policy engine rule evaluation, and Base Sepolia on-chain settlement.
+              policy engine rule evaluation, and Algorand TestNet on-chain settlement.
             </p>
           </motion.div>
 

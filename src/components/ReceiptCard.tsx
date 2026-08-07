@@ -180,10 +180,10 @@ export default function ReceiptCard({ receipt }: ReceiptCardProps) {
 
         {/* Transaction Hash */}
         <div>
-          <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter', marginBottom: 2 }}>Base Sepolia Transaction</div>
+          <div style={{ fontSize: 11, color: '#555', fontFamily: 'Inter', marginBottom: 2 }}>Algorand TestNet Transaction</div>
           {receipt.transactionHash ? (
             <a
-              href={`https://sepolia.basescan.org/tx/${receipt.transactionHash}`}
+              href={`https://lora.algokit.io/testnet/transaction/${receipt.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{

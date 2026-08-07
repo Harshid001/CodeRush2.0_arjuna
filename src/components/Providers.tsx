@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { config } from '@/lib/wagmi';
+import { WalletProvider } from '@txnlab/use-wallet-react';
+import { walletManager } from '@/lib/walletManager';
 
 import { ReceiptProvider } from '@/lib/receiptStore';
 import { ProviderStatusProvider } from '@/lib/providerStatus';
+import { ProviderProvider } from '@/context/ProviderContext';
+import { PaymentProvider } from '@/context/PaymentContext';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,14 +24,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <WagmiProvider config={config}>
+    <WalletProvider manager={walletManager}>
       <QueryClientProvider client={queryClient}>
         <ProviderStatusProvider>
           <ReceiptProvider>
-            {children}
+            <ProviderProvider>
+              <PaymentProvider>
+                {children}
+              </PaymentProvider>
+            </ProviderProvider>
           </ReceiptProvider>
         </ProviderStatusProvider>
       </QueryClientProvider>
-    </WagmiProvider>
+    </WalletProvider>
   );
 }

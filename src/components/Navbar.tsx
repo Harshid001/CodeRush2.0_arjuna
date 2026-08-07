@@ -2,21 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, AlertTriangle, RefreshCw, Coins } from 'lucide-react';
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useBalance, useReadContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
-
-const erc20Abi = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ type: 'uint256' }],
-  },
-] as const;
-
-const USDC_BASE_SEPOLIA = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
+import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, Coins, ExternalLink, RefreshCw } from 'lucide-react';
+import { useWallet, WalletId } from '@txnlab/use-wallet-react';
+import { useAlgorandBalance } from '@/hooks/useAlgorandBalance';
 
 const links = [
   { label: 'Marketplace', href: '/marketplace' },
@@ -33,15 +21,13 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Fallback demo wallet state when no browser extension is detected
-  const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
+  // Algorand useWallet hook
+  const { wallets, activeAddress: algoActiveAddress } = useWallet();
+  const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
 
-  // Wagmi hooks
-  const { address, isConnected } = useAccount();
-  const { connectors, connect } = useConnect();
-  const { disconnect } = useDisconnect();
-  const chainId = useChainId();
-  const { switchChain } = useSwitchChain();
+  // Fallback demo wallet state when Lute extension is not detected
+  const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
+  const [showLuteAlert, setShowLuteAlert] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -50,84 +36,41 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const activeAddress = mounted ? (address || demoWalletAddress) : null;
-  const activeIsConnected = mounted ? (isConnected || !!demoWalletAddress) : false;
-  const isWrongNetwork = mounted && isConnected && chainId !== baseSepolia.id;
+  const activeAddress = mounted ? (algoActiveAddress || demoWalletAddress) : null;
+  const activeIsConnected = mounted ? (!!algoActiveAddress || !!demoWalletAddress) : false;
 
-  // Fetch real ETH balance on Base Sepolia
-  const { data: ethBalanceData } = useBalance({
-    address: activeAddress as `0x${string}` | undefined,
-    chainId: baseSepolia.id,
-    query: {
-      enabled: !!activeAddress && mounted,
-    },
-  });
+  // Live Algorand TestNet Indexer balances
+  const { algoBalance, usdcBalance, isLoading: isBalanceLoading, error: balanceError, refetch: refetchBalance } = useAlgorandBalance(activeAddress);
 
-  // Fetch real USDC balance (6 decimals) on Base Sepolia
-  const { data: usdcRawBalance } = useReadContract({
-    address: USDC_BASE_SEPOLIA,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
-    chainId: baseSepolia.id,
-    query: {
-      enabled: !!activeAddress && mounted,
-    },
-  });
-
-  // Formatted balances
-  const formattedEth = ethBalanceData
-    ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
-    : activeIsConnected
-    ? '0.0000 ETH'
-    : '0.0450 ETH';
-
-  const formattedUsdc = usdcRawBalance !== undefined
-    ? `${(Number(usdcRawBalance) / 1e6).toFixed(2)} USDC`
-    : activeIsConnected
-    ? '0.00 USDC'
-    : '125.50 USDC';
+  const formattedAlgo = `${algoBalance.toFixed(4)} ALGO`;
+  const formattedUsdc = `${usdcBalance.toFixed(2)} USDC`;
 
   const handleConnect = async () => {
-    // 1. Try Wagmi injected connector
-    if (connectors && connectors.length > 0) {
+    if (luteWallet) {
       try {
-        const injectedConn = connectors.find(
-          (c) => c.id === 'injected' || c.name.toLowerCase().includes('metamask')
-        ) || connectors[0];
-
-        if (injectedConn) {
-          connect({ connector: injectedConn });
+        if (!luteWallet.isConnected) {
+          await luteWallet.connect();
+          setShowLuteAlert(false);
+          setDemoWalletAddress(null);
           return;
         }
       } catch (e) {
-        console.warn('Wagmi connection attempt error:', e);
+        console.warn('Lute wallet connection error:', e);
       }
     }
 
-    // 2. Direct window.ethereum fallback if extension present
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      try {
-        const accounts = await (window as any).ethereum.request({
-          method: 'eth_requestAccounts',
-        });
-        if (accounts && accounts[0]) {
-          setDemoWalletAddress(accounts[0]);
-          return;
-        }
-      } catch (e) {
-        console.warn('Direct ethereum request error:', e);
-      }
-    }
-
-    // 3. Demo wallet fallback if no Web3 wallet extension is installed
-    setDemoWalletAddress('0x71C83B47c04E923a10F8721102910a9E23');
+    // Fallback if Lute extension isn't detected or connection was cancelled
+    setShowLuteAlert(true);
+    setDemoWalletAddress('NP6R27ETK85JALGO92KTESTNETSERVICENODEKEY10294857KYST6LO');
   };
 
   const handleDisconnect = () => {
-    if (isConnected) disconnect();
+    if (luteWallet && luteWallet.isConnected) {
+      luteWallet.disconnect();
+    }
     setDemoWalletAddress(null);
     setDropdownOpen(false);
+    setShowLuteAlert(false);
   };
 
   const handleCopyAddress = () => {
@@ -138,60 +81,108 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     }
   };
 
+  // Format 58-character Algorand address (e.g., NP6R27ET...KYST6LO)
   const truncatedAddress = activeAddress
-    ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
+    ? activeAddress.length > 15
+      ? `${activeAddress.slice(0, 8)}...${activeAddress.slice(-7)}`
+      : activeAddress
     : '';
 
   return (
     <>
-      {/* Network Warning Banner */}
-      {isWrongNetwork && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 110,
-            background: 'rgba(180, 60, 60, 0.95)',
-            backdropFilter: 'blur(12px)',
-            color: '#ffffff',
-            padding: '8px 24px',
-            fontSize: 12,
-            fontFamily: 'Inter',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 12,
-            boxShadow: '0 4px 20px rgba(180,60,60,0.3)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AlertTriangle size={14} />
-            <span>Wrong Network: Please switch to Base Sepolia (Chain ID 84532) to transact.</span>
-          </div>
-          <button
-            onClick={() => switchChain?.({ chainId: baseSepolia.id })}
+      {/* Lute Wallet Not Detected Alert Toast */}
+      <AnimatePresence>
+        {showLuteAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             style={{
-              background: '#ffffff',
-              color: '#050505',
-              border: 'none',
-              borderRadius: 6,
-              padding: '3px 10px',
-              fontSize: 11,
+              position: 'fixed',
+              top: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 210,
+              background: '#121216',
+              border: '1px solid rgba(240, 140, 40, 0.4)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.85), 0 0 30px rgba(240,140,40,0.15)',
+              borderRadius: 16,
+              padding: '14px 22px',
+              maxWidth: 620,
+              width: '92%',
+              color: '#ffffff',
               fontFamily: 'Inter',
-              fontWeight: 600,
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
             }}
           >
-            <RefreshCw size={11} /> Switch Network
-          </button>
-        </div>
-      )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'rgba(240,140,40,0.15)',
+                  border: '1px solid rgba(240,140,40,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                🔑
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>
+                  Lute Wallet not detected
+                </div>
+                <div style={{ fontSize: 11, color: '#aaaaaa', marginTop: 1 }}>
+                  Connected using Algorand TestNet Demo Mode (<span style={{ fontFamily: 'monospace' }}>{truncatedAddress}</span>). Install it at lute.app.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <a
+                href="https://lute.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  background: '#f0a020',
+                  color: '#050505',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'Inter',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                Install Lute Wallet <ExternalLink size={11} />
+              </a>
+              <button
+                onClick={() => setShowLuteAlert(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#666666',
+                  cursor: 'pointer',
+                  padding: 4,
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.nav
         initial={{ y: -24, opacity: 0 }}
@@ -199,11 +190,11 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         style={{
           position: 'fixed',
-          top: isWrongNetwork ? 34 : 0,
+          top: 0,
           left: 0,
           right: 0,
           zIndex: 100,
-          transition: 'background 0.4s, backdrop-filter 0.4s, border-color 0.4s, top 0.3s',
+          transition: 'background 0.4s, backdrop-filter 0.4s, border-color 0.4s',
           background: scrolled ? 'rgba(5,5,5,0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(28px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(28px)' : 'none',
@@ -236,8 +227,8 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   padding: '7px 14px', borderRadius: 10, textDecoration: 'none',
                   transition: 'color 0.2s, background 0.2s',
                 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#ddd'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#666'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.color = '#ddd'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.color = '#666'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
                 >
                   {l.label}
                 </Link>
@@ -269,7 +260,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                     fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                   }}
                 >
-                  <Wallet size={13} /> Connect Wallet
+                  <Wallet size={13} /> Connect Lute Wallet
                 </button>
               ) : !activeIsConnected ? (
                 <button
@@ -284,7 +275,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
                 >
-                  <Wallet size={13} /> Connect Wallet
+                  <Wallet size={13} /> Connect Lute Wallet
                 </button>
               ) : (
                 <button
@@ -292,9 +283,9 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
                     borderRadius: 11,
-                    border: `1px solid ${isWrongNetwork ? 'rgba(180,60,60,0.4)' : 'rgba(255,255,255,0.12)'}`,
-                    background: isWrongNetwork ? 'rgba(180,60,60,0.1)' : 'rgba(255,255,255,0.06)',
-                    color: isWrongNetwork ? '#c83c3c' : '#f0f0f0',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#f0f0f0',
                     fontFamily: 'monospace', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                     transition: 'all 0.2s',
                   }}
@@ -304,8 +295,8 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: isWrongNetwork ? '#c83c3c' : '#5a9a5a',
-                      boxShadow: `0 0 6px ${isWrongNetwork ? '#c83c3c' : '#5a9a5a'}`,
+                      background: '#5a9a5a',
+                      boxShadow: '0 0 6px #5a9a5a',
                     }}
                   />
                   <span>{truncatedAddress}</span>
@@ -324,7 +315,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                       position: 'absolute',
                       top: 'calc(100% + 10px)',
                       right: 0,
-                      width: 270,
+                      width: 290,
                       borderRadius: 16,
                       overflow: 'hidden',
                       background: '#101012',
@@ -334,10 +325,39 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                       zIndex: 120,
                     }}
                   >
+                    {/* Demo Mode Notice */}
+                    {!algoActiveAddress && demoWalletAddress && (
+                      <div
+                        style={{
+                          marginBottom: 12,
+                          padding: '8px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(240,140,40,0.08)',
+                          border: '1px solid rgba(240,140,40,0.2)',
+                          fontSize: 11,
+                          color: '#f0a020',
+                          fontFamily: 'Inter',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span>🔑 Demo Mode Active</span>
+                        <a
+                          href="https://lute.app"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#ffffff', textDecoration: 'underline', fontWeight: 600 }}
+                        >
+                          Install Lute ↗
+                        </a>
+                      </div>
+                    )}
+
                     {/* Full Address & Copy */}
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
-                        Connected Account
+                        Connected Algorand Account
                       </div>
                       <div
                         style={{
@@ -348,7 +368,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                           borderRadius: 8,
                           background: 'rgba(255,255,255,0.03)',
                           border: '1px solid rgba(255,255,255,0.06)',
-                          fontSize: 11,
+                          fontSize: 10,
                           fontFamily: 'monospace',
                           color: '#cccccc',
                           wordBreak: 'break-all',
@@ -380,50 +400,77 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                         Network Status
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter', color: isWrongNetwork ? '#c83c3c' : '#5a9a5a' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter', color: '#5a9a5a' }}>
                           <span
                             style={{
                               width: 6,
                               height: 6,
                               borderRadius: '50%',
-                              background: isWrongNetwork ? '#c83c3c' : '#5a9a5a',
+                              background: '#5a9a5a',
                             }}
                           />
-                          {isWrongNetwork ? 'Wrong Network' : 'Base Sepolia'}
+                          Algorand TestNet
                         </div>
-                        {isWrongNetwork && (
-                          <button
-                            onClick={() => switchChain?.({ chainId: baseSepolia.id })}
-                            style={{
-                              padding: '4px 8px',
-                              borderRadius: 6,
-                              background: 'rgba(180,60,60,0.2)',
-                              border: '1px solid rgba(180,60,60,0.3)',
-                              color: '#ffffff',
-                              fontSize: 10,
-                              fontFamily: 'Inter',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Switch
-                          </button>
-                        )}
                       </div>
                     </div>
 
-                    {/* Wallet Balances Section (ETH & USDC) */}
+                    {/* Wallet Balances Section (ALGO & USDC ASA) */}
                     <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 8 }}>
-                        <Coins size={12} /> Base Sepolia Balances
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555555', fontFamily: 'Inter' }}>
+                          <Coins size={12} /> Algorand Balances
+                        </div>
+                        <button
+                          onClick={() => refetchBalance()}
+                          title="Refresh Balance"
+                          style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: 2 }}
+                        >
+                          <RefreshCw size={11} className={isBalanceLoading ? 'animate-spin-slow' : ''} />
+                        </button>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>ETH Balance</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0', fontFamily: 'monospace' }}>{formattedEth}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>USDC Balance</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#5a9a5a', fontFamily: 'monospace' }}>{formattedUsdc}</span>
-                      </div>
+
+                      {balanceError && !isBalanceLoading ? (
+                        <div style={{ fontSize: 11, color: '#c83c3c', fontFamily: 'Inter', padding: '4px 0' }}>
+                          Balance unavailable
+                        </div>
+                      ) : isBalanceLoading && algoBalance === 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
+                          <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
+                          <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>ALGO</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0', fontFamily: 'monospace' }}>{formattedAlgo}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>USDC (ASA)</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#5a9a5a', fontFamily: 'monospace' }}>{formattedUsdc}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Explorer Link */}
+                    <div style={{ marginBottom: 12 }}>
+                      <a
+                        href={`https://lora.algokit.io/testnet/account/${activeAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          fontSize: 11,
+                          color: '#80a5e5',
+                          textDecoration: 'none',
+                          fontFamily: 'Inter',
+                        }}
+                      >
+                        View Account on Lora Explorer <ExternalLink size={11} />
+                      </a>
                     </div>
 
                     {/* Disconnect */}
@@ -504,7 +551,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                       background: 'rgba(255,255,255,0.05)', color: '#ccc', fontFamily: 'Inter', fontSize: 14, cursor: 'pointer',
                     }}
                   >
-                    <Wallet size={14} /> Connect Wallet
+                    <Wallet size={14} /> Connect Lute Wallet
                   </button>
                 ) : (
                   <button
