@@ -1,207 +1,344 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useProviderContext } from "../../context/ProviderContext";
-import { PaymentScheme } from "../../lib/x402/types";
-import { PlusCircle, CheckCircle2, ArrowLeft, ShieldCheck, Zap } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Zap, Shield, Globe, TrendingUp, ChevronDown,
+  Rocket, DollarSign, Users, Lock,
+} from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import ProviderRegistrationForm from '@/components/provider/ProviderRegistrationForm';
+import ProviderPreview from '@/components/provider/ProviderPreview';
+import type { Provider } from '@/types/provider';
 
+/* ─── FAQ data ─── */
+const FAQ_ITEMS = [
+  {
+    q: 'How does pricing work for providers?',
+    a: 'You set your own price per request. Choose "Exact" for a fixed fee or "Up To" for a metered cap. Payments are settled on-chain per x402 protocol.',
+  },
+  {
+    q: 'What are the requirements to list an API?',
+    a: 'A production-ready HTTPS endpoint, valid JSON schemas for input/output, and compliance with our Terms of Service. We recommend uptime above 99%.',
+  },
+  {
+    q: 'How do I receive payments?',
+    a: 'Payments are routed to your wallet address on the selected network. Settlements happen automatically via the x402 facilitator after each verified request.',
+  },
+  {
+    q: 'Can I update my listing after publishing?',
+    a: 'Yes. You can modify pricing, description, schemas, and rate limits at any time from your provider dashboard (coming soon).',
+  },
+];
+
+/* ─── Benefits data ─── */
+const BENEFITS = [
+  {
+    icon: DollarSign,
+    title: 'Instant Monetization',
+    desc: 'Start earning per-request revenue from day one. No invoicing, no billing headaches.',
+  },
+  {
+    icon: Globe,
+    title: 'Global Reach',
+    desc: 'Expose your API to thousands of developers and AI agents on the marketplace.',
+  },
+  {
+    icon: Shield,
+    title: 'On-Chain Settlements',
+    desc: 'Transparent, trustless payments via x402 protocol. Verified and settled automatically.',
+  },
+  {
+    icon: Rocket,
+    title: 'Zero Infrastructure Overhead',
+    desc: 'We handle discovery, metering, and payment flows. You focus on your API.',
+  },
+];
+
+/* ─── FAQ Accordion Item ─── */
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(255,255,255,0.02)',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s',
+      }}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 14,
+          fontWeight: 500,
+          color: '#ccc',
+          textAlign: 'left',
+        }}
+      >
+        {q}
+        <ChevronDown
+          size={16}
+          color="#555"
+          style={{
+            transition: 'transform 0.25s',
+            transform: open ? 'rotate(180deg)' : 'none',
+            flexShrink: 0,
+          }}
+        />
+      </button>
+      {open && (
+        <div
+          style={{
+            padding: '0 20px 16px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 13,
+            color: '#666',
+            lineHeight: 1.7,
+          }}
+        >
+          {a}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Page ─── */
 export default function BecomeProviderPage() {
-  const { addProvider } = useProviderContext();
-  const router = useRouter();
+  const [providers, setProviders] = useState<Provider[]>([]);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<
-    "LLM & NLP" | "Computer Vision" | "Financial & Market Data" | "Code & DevTools" | "Audio & Speech" | "Web Scraping"
-  >("LLM & NLP");
-  const [price, setPrice] = useState("0.10");
-  const [paymentType, setPaymentType] = useState<PaymentScheme>("exact");
-  const [qualityScore, setQualityScore] = useState("95");
-  const [network, setNetwork] = useState("base-sepolia");
-  const [payToAddress, setPayToAddress] = useState("0x_sim_recip_my_node_99");
-  const [endpoint, setEndpoint] = useState("https://api.my-node.ai/v1/inference");
-
-  const [publishedSuccess, setPublishedSuccess] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !description || !price) return;
-
-    addProvider({
-      name,
-      description,
-      category,
-      price: parseFloat(price),
-      paymentType,
-      qualityScore: parseInt(qualityScore, 10),
-      payToAddress,
-      network,
-      endpoint,
-      outputSchema: { status: "string", data: "object" },
-      active: true,
-    });
-
-    setPublishedSuccess(true);
-    setTimeout(() => {
-      router.push("/marketplace");
-    }, 1500);
+  const handleProviderSubmit = (provider: Provider) => {
+    setProviders((prev) => [provider, ...prev]);
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <Link
-        href="/marketplace"
-        className="inline-flex items-center text-xs text-slate-400 hover:text-white space-x-1"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Marketplace</span>
-      </Link>
+    <div style={{ background: '#050505', minHeight: '100vh' }}>
+      <Navbar />
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              x402 Node Publisher
-            </span>
-            <h1 className="text-2xl font-bold text-white">Publish New Paid API Service</h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Register your API service endpoint into the marketplace. Set pricing scheme and x402 payment requirements.
-          </p>
-        </div>
+      <main style={{ paddingTop: 100, paddingBottom: 120 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
 
-        {publishedSuccess && (
-          <div className="bg-emerald-950/60 border border-emerald-500/40 p-4 rounded-xl text-emerald-300 flex items-center space-x-2 text-xs font-bold font-mono">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            <span>API Node published successfully! Redirecting to Marketplace...</span>
-          </div>
-        )}
+          {/* ═══ HERO ═══ */}
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            style={{ textAlign: 'center', marginBottom: 80 }}
+          >
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 14px', borderRadius: 100,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              fontFamily: 'Inter', fontSize: 11, fontWeight: 600, color: '#555',
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 20,
+            }}>
+              <Zap size={12} /> Provider Program
+            </div>
+            <h1 style={{
+              fontFamily: 'Playfair Display, Georgia, serif',
+              fontWeight: 600,
+              fontSize: 'clamp(2.4rem, 5vw, 3.6rem)',
+              color: '#efefef',
+              letterSpacing: '-0.025em',
+              marginBottom: 16,
+              lineHeight: 1.15,
+            }}>
+              Turn your API into a<br />
+              <span style={{ color: '#888' }}>revenue stream</span>
+            </h1>
+            <p style={{
+              fontFamily: 'Inter', fontSize: 15, color: '#555',
+              maxWidth: 520, margin: '0 auto', lineHeight: 1.7,
+            }}>
+              List your API on the marketplace, set your price, and start earning
+              on every request — powered by trustless on-chain settlements.
+            </p>
+          </motion.section>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Service Name</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. DeepLlama Sentiment Pro"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:border-cyan-400 focus:outline-none"
-              />
+          {/* ═══ BENEFITS ═══ */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            style={{ marginBottom: 80 }}
+          >
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 16,
+            }}>
+              {BENEFITS.map((b, i) => {
+                const Icon = b.icon;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 + i * 0.08 }}
+                    className="card-hover"
+                    style={{
+                      padding: '24px',
+                      borderRadius: 18,
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 11,
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+                    }}>
+                      <Icon size={17} color="#777" />
+                    </div>
+                    <h3 style={{
+                      fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#ccc', marginBottom: 6,
+                    }}>
+                      {b.title}
+                    </h3>
+                    <p style={{
+                      fontFamily: 'Inter', fontSize: 12, color: '#555', lineHeight: 1.65,
+                    }}>
+                      {b.desc}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.section>
+
+          {/* ═══ REGISTRATION FORM + PREVIEW ═══ */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            style={{ marginBottom: 80 }}
+          >
+            <div style={{ marginBottom: 32 }}>
+              <p style={{
+                fontFamily: 'Inter', fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.12em', textTransform: 'uppercase', color: '#444', marginBottom: 10,
+              }}>
+                Register Your API
+              </p>
+              <h2 style={{
+                fontFamily: 'Playfair Display, Georgia, serif',
+                fontWeight: 600, fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                color: '#efefef', letterSpacing: '-0.02em',
+              }}>
+                Fill out the details below
+              </h2>
             </div>
 
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:border-cyan-400 focus:outline-none"
-              >
-                <option value="LLM & NLP">LLM & NLP</option>
-                <option value="Computer Vision">Computer Vision</option>
-                <option value="Financial & Market Data">Financial & Market Data</option>
-                <option value="Code & DevTools">Code & DevTools</option>
-              </select>
+            {/* Mobile preview placeholder (shown above form on small screens) */}
+            <div className="provider-preview-mobile" style={{ marginBottom: 24, display: 'none' }}>
+              {/* Will be CSS-enabled on mobile */}
             </div>
-          </div>
 
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Description</label>
-            <textarea
-              rows={3}
-              required
-              placeholder="Describe API capabilities, accuracy, and supported data inputs..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:border-cyan-400 focus:outline-none"
+            <ProviderRegistrationForm
+              onSubmit={handleProviderSubmit}
+              renderPreview={(values) => <ProviderPreview data={values} />}
             />
-          </div>
+          </motion.section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Payment Scheme</label>
-              <select
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value as PaymentScheme)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:border-cyan-400 focus:outline-none font-mono"
-              >
-                <option value="exact">EXACT (Fixed Price)</option>
-                <option value="upto">UPTO (Metered Usage Cap)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Price / Max Cap ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono focus:border-cyan-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Quality Score (0-100%)</label>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                required
-                value={qualityScore}
-                onChange={(e) => setQualityScore(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono focus:border-cyan-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Network</label>
-              <input
-                type="text"
-                value={network}
-                onChange={(e) => setNetwork(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono focus:border-cyan-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-300 mb-1 font-semibold">Recipient Identifier</label>
-              <input
-                type="text"
-                value={payToAddress}
-                onChange={(e) => setPayToAddress(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono focus:border-cyan-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-300 mb-1 font-semibold">Endpoint URL</label>
-            <input
-              type="text"
-              value={endpoint}
-              onChange={(e) => setEndpoint(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white font-mono focus:border-cyan-400 focus:outline-none"
-            />
-          </div>
-
-          <div className="pt-4">
-            <button
-              type="submit"
-              className="w-full py-3.5 px-6 rounded-xl font-extrabold text-sm bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center space-x-2"
+          {/* ═══ RECENTLY REGISTERED (if any) ═══ */}
+          {providers.length > 0 && (
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{ marginBottom: 80 }}
             >
-              <PlusCircle className="w-5 h-5" />
-              <span>Publish API Provider to Marketplace</span>
-            </button>
-          </div>
-        </form>
-      </div>
+              <h2 style={{
+                fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#888', marginBottom: 16,
+              }}>
+                Recently Registered ({providers.length})
+              </h2>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                {providers.slice(0, 5).map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      flex: '0 0 260px',
+                      padding: '16px 18px',
+                      borderRadius: 14,
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <h4 style={{
+                      fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: '#ccc', marginBottom: 4,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {p.providerName}
+                    </h4>
+                    <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#555', marginBottom: 8 }}>
+                      {p.companyName} · {p.category}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Inter', fontSize: 11 }}>
+                      <span style={{ color: '#666' }}>${p.pricePerRequest.toFixed(4)}/req</span>
+                      <span style={{ color: '#5a9a5a' }}>{p.qualityScore}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+          )}
+
+          {/* ═══ FAQ ═══ */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            style={{ marginBottom: 80, maxWidth: 720, margin: '0 auto 80px' }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <p style={{
+                fontFamily: 'Inter', fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.12em', textTransform: 'uppercase', color: '#444', marginBottom: 10,
+              }}>
+                FAQ
+              </p>
+              <h2 style={{
+                fontFamily: 'Playfair Display, Georgia, serif',
+                fontWeight: 600, fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)',
+                color: '#efefef', letterSpacing: '-0.02em',
+              }}>
+                Common questions
+              </h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {FAQ_ITEMS.map((item, i) => (
+                <FaqItem key={i} q={item.q} a={item.a} />
+              ))}
+            </div>
+          </motion.section>
+
+        </div>
+      </main>
+
+      <Footer />
+
+      {/* ═══ Responsive CSS for mobile preview / desktop preview ═══ */}
+      <style>{`
+        @media (max-width: 860px) {
+          .provider-preview-desktop { display: none !important; }
+          .provider-preview-mobile { display: block !important; }
+        }
+        @media (min-width: 861px) {
+          .provider-preview-mobile { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
