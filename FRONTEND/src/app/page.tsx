@@ -192,7 +192,7 @@ export default function Home() {
       />
 
       <Stars />
-      <Navbar hideLinks={true} />
+      <Navbar hideLinks={true} showWallet={false} />
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section style={{ ...S.section, minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 80 }}>

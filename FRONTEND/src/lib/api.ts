@@ -1,7 +1,7 @@
 import { Provider, PolicyLimits, Receipt } from "./x402/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-const HEALTH_URL = process.env.NEXT_PUBLIC_HEALTH_URL || "http://localhost:4000/health";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+const HEALTH_URL = process.env.NEXT_PUBLIC_HEALTH_URL || "/health";
 
 export interface ApiResponse<T> {
   success: boolean;

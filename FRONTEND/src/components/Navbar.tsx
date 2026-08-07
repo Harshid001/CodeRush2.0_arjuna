@@ -16,7 +16,13 @@ const links = [
   { label: 'AI Advisor',  href: '/agent-advisor' },
 ];
 
-export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
+export default function Navbar({
+  hideLinks = false,
+  showWallet = true,
+}: {
+  hideLinks?: boolean;
+  showWallet?: boolean;
+}) {
   const { user, isLoggedIn, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -249,10 +255,8 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                 </Link>
               ))}
             </div>
-          )}
-
-          {/* Right */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="hidden lg:flex">
+          )}          {/* Right */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
             <button onClick={() => setSearchOpen(true)} style={{
               width: 34, height: 34, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.05)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -265,258 +269,260 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
             </button>
 
             {/* Wallet Button & Dropdown */}
-            <div style={{ position: 'relative' }}>
-              {!mounted ? (
-                <button
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-                    borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.05)', color: '#bbb',
-                    fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
-                  }}
-                >
-                  <Wallet size={13} /> Connect Lute Wallet
-                </button>
-              ) : !activeIsConnected ? (
-                <button
-                  onClick={handleConnect}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-                    borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.05)', color: '#bbb',
-                    fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
-                >
-                  <Wallet size={13} /> Connect Lute Wallet
-                </button>
-              ) : (
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-                    borderRadius: 11,
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#f0f0f0',
-                    fontFamily: 'monospace', fontWeight: 500, fontSize: 13, cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <span
+            {showWallet && (
+              <div style={{ position: 'relative' }}>
+                {!mounted ? (
+                  <button
                     style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: '#5a9a5a',
-                      boxShadow: '0 0 6px #5a9a5a',
-                    }}
-                  />
-                  <span>{truncatedAddress}</span>
-                </button>
-              )}
-
-              {/* Wallet Dropdown Menu */}
-              <AnimatePresence>
-                {activeIsConnected && dropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 10px)',
-                      right: 0,
-                      width: 290,
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      background: '#101012',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      boxShadow: '0 24px 48px rgba(0,0,0,0.7)',
-                      padding: 16,
-                      zIndex: 120,
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+                      borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.05)', color: '#bbb',
+                      fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                     }}
                   >
-                    {/* Demo Mode Notice */}
-                    {!algoActiveAddress && demoWalletAddress && (
-                      <div
-                        style={{
-                          marginBottom: 12,
-                          padding: '8px 10px',
-                          borderRadius: 8,
-                          background: 'rgba(240,140,40,0.08)',
-                          border: '1px solid rgba(240,140,40,0.2)',
-                          fontSize: 11,
-                          color: '#f0a020',
-                          fontFamily: 'Inter',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <span>🔑 Demo Mode Active</span>
-                        <a
-                          href="https://lute.app"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#ffffff', textDecoration: 'underline', fontWeight: 600 }}
-                        >
-                          Install Lute ↗
-                        </a>
-                      </div>
-                    )}
+                    <Wallet size={13} /> Connect Lute Wallet
+                  </button>
+                ) : !activeIsConnected ? (
+                  <button
+                    onClick={handleConnect}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+                      borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.05)', color: '#bbb',
+                      fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
+                  >
+                    <Wallet size={13} /> Connect Lute Wallet
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                      borderRadius: 11,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#f0f0f0',
+                      fontFamily: 'monospace', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: '#5a9a5a',
+                        boxShadow: '0 0 6px #5a9a5a',
+                      }}
+                    />
+                    <span>{truncatedAddress}</span>
+                  </button>
+                )}
 
-                    {/* Full Address & Copy */}
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
-                        Connected Algorand Account
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 10px',
-                          borderRadius: 8,
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.06)',
-                          fontSize: 10,
-                          fontFamily: 'monospace',
-                          color: '#cccccc',
-                          wordBreak: 'break-all',
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeAddress}</span>
-                        <button
-                          onClick={handleCopyAddress}
+                {/* Wallet Dropdown Menu */}
+                <AnimatePresence>
+                  {activeIsConnected && dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 10px)',
+                        right: 0,
+                        width: 290,
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        background: '#101012',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 24px 48px rgba(0,0,0,0.7)',
+                        padding: 16,
+                        zIndex: 120,
+                      }}
+                    >
+                      {/* Demo Mode Notice */}
+                      {!algoActiveAddress && demoWalletAddress && (
+                        <div
                           style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#777777',
-                            cursor: 'pointer',
-                            padding: 2,
-                            marginLeft: 6,
+                            marginBottom: 12,
+                            padding: '8px 10px',
+                            borderRadius: 8,
+                            background: 'rgba(240,140,40,0.08)',
+                            border: '1px solid rgba(240,140,40,0.2)',
+                            fontSize: 11,
+                            color: '#f0a020',
+                            fontFamily: 'Inter',
                             display: 'flex',
                             alignItems: 'center',
+                            justifyContent: 'space-between',
                           }}
-                          title="Copy Address"
                         >
-                          {copied ? <Check size={12} color="#5a9a5a" /> : <Copy size={12} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Network Status */}
-                    <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
-                        Network Status
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter', color: '#5a9a5a' }}>
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              background: '#5a9a5a',
-                            }}
-                          />
-                          Algorand TestNet
+                          <span>🔑 Demo Mode Active</span>
+                          <a
+                            href="https://lute.app"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#ffffff', textDecoration: 'underline', fontWeight: 600 }}
+                          >
+                            Install Lute ↗
+                          </a>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Wallet Balances Section (ALGO & USDC ASA) */}
-                    <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555555', fontFamily: 'Inter' }}>
-                          <Coins size={12} /> Algorand Balances
-                        </div>
-                        <button
-                          onClick={() => refetchBalance()}
-                          title="Refresh Balance"
-                          style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: 2 }}
-                        >
-                          <RefreshCw size={11} className={isBalanceLoading ? 'animate-spin-slow' : ''} />
-                        </button>
-                      </div>
-
-                      {balanceError && !isBalanceLoading ? (
-                        <div style={{ fontSize: 11, color: '#c83c3c', fontFamily: 'Inter', padding: '4px 0' }}>
-                          Balance unavailable
-                        </div>
-                      ) : isBalanceLoading && algoBalance === 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
-                          <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
-                          <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
-                        </div>
-                      ) : (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>ALGO</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0', fontFamily: 'monospace' }}>{formattedAlgo}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>USDC (ASA)</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#5a9a5a', fontFamily: 'monospace' }}>{formattedUsdc}</span>
-                          </div>
-                        </>
                       )}
-                    </div>
 
-                    {/* Explorer Link */}
-                    <div style={{ marginBottom: 12 }}>
-                      <a
-                        href={`https://lora.algokit.io/testnet/account/${activeAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {/* Full Address & Copy */}
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
+                          Connected Algorand Account
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            borderRadius: 8,
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                            color: '#cccccc',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeAddress}</span>
+                          <button
+                            onClick={handleCopyAddress}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#777777',
+                              cursor: 'pointer',
+                              padding: 2,
+                              marginLeft: 6,
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="Copy Address"
+                          >
+                            {copied ? <Check size={12} color="#5a9a5a" /> : <Copy size={12} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Network Status */}
+                      <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ fontSize: 11, color: '#555555', fontFamily: 'Inter', marginBottom: 4 }}>
+                          Network Status
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'Inter', color: '#5a9a5a' }}>
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                background: '#5a9a5a',
+                              }}
+                            />
+                            Algorand TestNet
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Wallet Balances Section (ALGO & USDC ASA) */}
+                      <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555555', fontFamily: 'Inter' }}>
+                            <Coins size={12} /> Algorand Balances
+                          </div>
+                          <button
+                            onClick={() => refetchBalance()}
+                            title="Refresh Balance"
+                            style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: 2 }}
+                          >
+                            <RefreshCw size={11} className={isBalanceLoading ? 'animate-spin-slow' : ''} />
+                          </button>
+                        </div>
+
+                        {balanceError && !isBalanceLoading ? (
+                          <div style={{ fontSize: 11, color: '#c83c3c', fontFamily: 'Inter', padding: '4px 0' }}>
+                            Balance unavailable
+                          </div>
+                        ) : isBalanceLoading && algoBalance === 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
+                            <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
+                            <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>ALGO</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0', fontFamily: 'monospace' }}>{formattedAlgo}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: 12, color: '#888888', fontFamily: 'Inter' }}>USDC (ASA)</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#5a9a5a', fontFamily: 'monospace' }}>{formattedUsdc}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Explorer Link */}
+                      <div style={{ marginBottom: 12 }}>
+                        <a
+                          href={`https://lora.algokit.io/testnet/account/${activeAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            fontSize: 11,
+                            color: '#80a5e5',
+                            textDecoration: 'none',
+                            fontFamily: 'Inter',
+                          }}
+                        >
+                          View Account on Lora Explorer <ExternalLink size={11} />
+                        </a>
+                      </div>
+
+                      {/* Disconnect */}
+                      <button
+                        onClick={handleDisconnect}
                         style={{
+                          width: '100%',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          fontSize: 11,
-                          color: '#80a5e5',
-                          textDecoration: 'none',
+                          padding: '9px',
+                          borderRadius: 10,
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: 'rgba(255,255,255,0.04)',
+                          color: '#c83c3c',
+                          fontSize: 12,
                           fontFamily: 'Inter',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'background 0.2s',
                         }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(180,60,60,0.15)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                       >
-                        View Account on Lora Explorer <ExternalLink size={11} />
-                      </a>
-                    </div>
-
-                    {/* Disconnect */}
-                    <button
-                      onClick={handleDisconnect}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        padding: '9px',
-                        borderRadius: 10,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(255,255,255,0.04)',
-                        color: '#c83c3c',
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'background 0.2s',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(180,60,60,0.15)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-                    >
-                      <LogOut size={13} /> Disconnect Wallet
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                        <LogOut size={13} /> Disconnect Wallet
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             <div style={{ position: 'relative' }}>
               {mounted && isLoggedIn && user ? (
