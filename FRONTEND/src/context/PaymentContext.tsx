@@ -9,6 +9,12 @@ import {
   PendingApproval,
 } from "../lib/x402/types";
 import { generateId } from "../lib/utils";
+import {
+  fetchBackendPolicy,
+  updateBackendPolicy,
+  recordBackendPayment,
+  fetchBackendReceipts,
+} from "../lib/api";
 
 interface SpendState {
   today: number;
@@ -81,8 +87,25 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [activeTraceId, setActiveTraceId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    async function initBackendData() {
+      const bPolicy = await fetchBackendPolicy();
+      if (bPolicy) setPolicyLimits(bPolicy);
+
+      const bReceipts = await fetchBackendReceipts();
+      if (bReceipts && bReceipts.length > 0) {
+        setReceipts(bReceipts);
+      }
+    }
+    initBackendData();
+  }, []);
+
   const updatePolicyLimits = (newLimits: Partial<PolicyLimits>) => {
-    setPolicyLimits((prev) => ({ ...prev, ...newLimits }));
+    setPolicyLimits((prev) => {
+      const updated = { ...prev, ...newLimits };
+      updateBackendPolicy(updated);
+      return updated;
+    });
   };
 
   const addReceipt = (receipt: Receipt) => {
@@ -102,6 +125,17 @@ export const PaymentProvider = ({ children }: { children: ReactNode }) => {
       });
       // Track used nonce for double-spend prevention
       markNonceUsed(receipt.requirement.nonce);
+
+      // Async record payment in backend
+      recordBackendPayment({
+        providerId: receipt.providerId,
+        amount: receipt.costActual,
+        network: receipt.requirement.network,
+        scheme: receipt.requirement.scheme || "exact",
+        requirementNonce: receipt.requirement.nonce,
+        payerKeyId: receipt.payload.payerKeyId,
+        signature: receipt.payload.signature,
+      });
     }
   };
 

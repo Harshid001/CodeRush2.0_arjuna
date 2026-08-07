@@ -1,0 +1,255 @@
+import { Provider, PolicyLimits, Receipt } from "./x402/types";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const HEALTH_URL = process.env.NEXT_PUBLIC_HEALTH_URL || "http://localhost:4000/health";
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Check Backend Health
+ */
+export async function checkBackendHealth(): Promise<{ running: boolean; message?: string }> {
+  try {
+    const res = await fetch(HEALTH_URL, { cache: "no-store" });
+    if (!res.ok) return { running: false };
+    const data = await res.json();
+    return { running: true, message: data.message };
+  } catch {
+    return { running: false };
+  }
+}
+
+/**
+ * Fetch all providers from Backend MongoDB
+ */
+export async function fetchBackendProviders(): Promise<Provider[] | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/providers`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.success || !json.data?.providers) return null;
+
+    return json.data.providers.map((p: any) => ({
+      id: p._id || p.id,
+      name: p.name,
+      description: p.description,
+      category: p.category,
+      price: p.price,
+      paymentType: p.paymentType,
+      qualityScore: p.qualityScore,
+      payToAddress: p.payToAddress,
+      network: p.network,
+      endpoint: p.endpoint,
+      outputSchema: p.outputSchema,
+      isInjectablePrompt: p.isInjectablePrompt ?? false,
+      active: p.active ?? true,
+    }));
+  } catch (err) {
+    console.warn("[api] Failed to fetch providers from backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Register/Create a new Provider in Backend
+ */
+export async function createBackendProvider(provider: Omit<Provider, "id">): Promise<Provider | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/providers`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(provider),
+    });
+
+    if (!res.ok) {
+      console.warn("[api] Failed to create provider, status:", res.status);
+      return null;
+    }
+
+    const json = await res.json();
+    if (!json.success || !json.data) return null;
+
+    const p = json.data;
+    return {
+      id: p._id || p.id,
+      name: p.name,
+      description: p.description,
+      category: p.category,
+      price: p.price,
+      paymentType: p.paymentType,
+      qualityScore: p.qualityScore,
+      payToAddress: p.payToAddress,
+      network: p.network,
+      endpoint: p.endpoint,
+      outputSchema: p.outputSchema,
+      isInjectablePrompt: p.isInjectablePrompt ?? false,
+      active: p.active ?? true,
+    };
+  } catch (err) {
+    console.warn("[api] Error creating provider in backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch user budget policy from Backend
+ */
+export async function fetchBackendPolicy(): Promise<PolicyLimits | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/policies`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.success || !json.data) return null;
+
+    return {
+      perRequestMax: json.data.perRequestMax,
+      perProviderDailyMax: json.data.perProviderDailyMax,
+      dailyMax: json.data.dailyMax,
+      minQualityScore: json.data.minQualityScore,
+      allowlist: json.data.allowlist || [],
+    };
+  } catch (err) {
+    console.warn("[api] Error fetching policy from backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Update user budget policy in Backend
+ */
+export async function updateBackendPolicy(policy: Partial<PolicyLimits>): Promise<PolicyLimits | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/policies`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(policy),
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.success || !json.data) return null;
+
+    return {
+      perRequestMax: json.data.perRequestMax,
+      perProviderDailyMax: json.data.perProviderDailyMax,
+      dailyMax: json.data.dailyMax,
+      minQualityScore: json.data.minQualityScore,
+      allowlist: json.data.allowlist || [],
+    };
+  } catch (err) {
+    console.warn("[api] Error updating policy in backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Record a payment / paid execution in Backend
+ */
+export async function recordBackendPayment(payload: {
+  providerId: string;
+  amount: number;
+  currency?: string;
+  network: string;
+  scheme: "exact" | "upto";
+  requirementNonce: string;
+  payerKeyId: string;
+  signature: string;
+}): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/payments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        currency: "USD",
+        ...payload,
+      }),
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success ? json.data : null;
+  } catch (err) {
+    console.warn("[api] Error recording payment in backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch user receipts from Backend
+ */
+export async function fetchBackendReceipts(): Promise<Receipt[] | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/receipts`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.success || !json.data?.receipts) return null;
+
+    return json.data.receipts.map((r: any) => ({
+      id: r._id || r.id,
+      providerId: r.providerId,
+      providerName: r.providerName,
+      scheme: r.scheme,
+      status: "success",
+      inputHash: r.inputHash,
+      outputHash: r.outputHash,
+      costActual: r.finalAmount,
+      latencyMs: r.latencyMs || 45,
+      createdAt: r.createdAt || new Date().toISOString(),
+      verification: {
+        valid: true,
+      },
+      settlement: {
+        settled: true,
+        settlementId: r.settlementId,
+        settledAt: r.settledAt,
+        finalAmount: r.finalAmount,
+      },
+      requirement: {
+        providerId: r.providerId,
+        scheme: r.scheme,
+        amount: r.amount,
+        currency: r.currency || "USD",
+        payToAddress: "0x_sim_recip",
+        network: r.network,
+        expiresAt: new Date(Date.now() + 300000).toISOString(),
+        nonce: r.requirementNonce,
+      },
+      payload: {
+        requirementNonce: r.requirementNonce,
+        payerKeyId: r.payerKeyId,
+        amount: r.finalAmount,
+        signature: "0x_verified",
+        signedAt: new Date().toISOString(),
+      },
+    }));
+  } catch (err) {
+    console.warn("[api] Error fetching receipts from backend:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch analytics metrics from Backend
+ */
+export async function fetchBackendAnalytics(): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/analytics`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success ? json.data : null;
+  } catch (err) {
+    console.warn("[api] Error fetching analytics from backend:", err);
+    return null;
+  }
+}
