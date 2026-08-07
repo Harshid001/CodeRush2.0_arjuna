@@ -1,5 +1,0 @@
-{
-  "buildCommand": "cd FRONTEND && npm install --include=dev && npm run build",
-  "outputDirectory": "FRONTEND/.next",
-  "framework": "nextjs"
-}
