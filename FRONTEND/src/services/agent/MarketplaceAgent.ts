@@ -3,7 +3,7 @@ import type { MarketplaceApi } from "@/lib/data/marketplaceApis";
 import { checkPolicy } from "@/lib/x402/policy";
 import { findBestProvider } from "@/lib/recommendation";
 import { PolicyLimits, Provider } from "@/lib/x402/types";
-import { intentParser, ParsedIntent, AgentPriority } from "./IntentParser";
+import { intentParser, ParsedIntent } from "./IntentParser";
 
 export interface CandidateComparison {
   api: MarketplaceApi;
@@ -56,17 +56,37 @@ function apiToProvider(apiItem: MarketplaceApi): Provider {
 
 export class MarketplaceAgent {
   /**
-   * Main Autonomous Pipeline Orchestration:
-   * Parse Intent -> Search Marketplace -> Compare Providers -> Evaluate Policy -> Run Decision Engine -> Select Winner
+   * Async Autonomous Pipeline Orchestration with DeepSeek Intent Parsing:
+   * Parse Intent (via DeepSeek server route) -> Search Marketplace -> Compare Providers -> Evaluate Policy -> Run Decision Engine -> Select Winner
+   */
+  public async executeAsync(
+    prompt: string,
+    policyLimits: PolicyLimits = { perRequestMax: 5.0, perProviderDailyMax: 10.0, dailyMax: 20.0, minQualityScore: 70 },
+    currentSpend: { today: number; todayByProvider: Record<string, number> } = { today: 0, todayByProvider: {} }
+  ): Promise<DecisionReport> {
+    // Stage 1: Parse Intent using DeepSeek AI (with deterministic fallback)
+    const intent = await intentParser.parseAsync(prompt);
+    return this.runPipelineWithIntent(prompt, intent, policyLimits, currentSpend);
+  }
+
+  /**
+   * Sync Autonomous Pipeline Orchestration (Deterministic Fallback)
    */
   public execute(
     prompt: string,
     policyLimits: PolicyLimits = { perRequestMax: 5.0, perProviderDailyMax: 10.0, dailyMax: 20.0, minQualityScore: 70 },
     currentSpend: { today: number; todayByProvider: Record<string, number> } = { today: 0, todayByProvider: {} }
   ): DecisionReport {
-    // Stage 1: Parse Intent
     const intent = intentParser.parse(prompt);
+    return this.runPipelineWithIntent(prompt, intent, policyLimits, currentSpend);
+  }
 
+  private runPipelineWithIntent(
+    prompt: string,
+    intent: ParsedIntent,
+    policyLimits: PolicyLimits,
+    currentSpend: { today: number; todayByProvider: Record<string, number> }
+  ): DecisionReport {
     // Stage 2: Search Marketplace Providers
     let searchCategory = intent.category;
     let searchedCandidates = apis.filter((a) => {
@@ -78,7 +98,6 @@ export class MarketplaceAgent {
       );
     });
 
-    // Fallback if no candidate matches exact category keyword
     if (searchedCandidates.length === 0) {
       searchedCandidates = [...apis];
     }
@@ -90,7 +109,6 @@ export class MarketplaceAgent {
       const relVal = api.reliability || 98;
       const latVal = api.latency || 120;
 
-      // Calculate weightings based on Intent Priority
       let wQuality = 0.4;
       let wPrice = 0.3;
       let wRel = 0.2;
@@ -138,7 +156,6 @@ export class MarketplaceAgent {
     const eligibleForDecision: MarketplaceApi[] = [];
     const rejectedCandidates: { api: MarketplaceApi; reason: string }[] = [];
 
-    // Override per-request limit if user specified budget in prompt
     const effectiveLimits: PolicyLimits = {
       ...policyLimits,
       perRequestMax: intent.maxBudgetUSD !== undefined ? Math.min(intent.maxBudgetUSD, policyLimits.perRequestMax) : policyLimits.perRequestMax,
@@ -168,7 +185,6 @@ export class MarketplaceAgent {
       }
     }
 
-    // Error Case: No provider passed policy check
     if (eligibleForDecision.length === 0) {
       return {
         prompt,
@@ -182,15 +198,16 @@ export class MarketplaceAgent {
       };
     }
 
-    // Stage 5: Run Decision Engine (reusing recommendation.ts findBestProvider)
+    // Stage 5: Run Decision Engine
     const providerList: Provider[] = eligibleForDecision.map(apiToProvider);
     const bestProvider = findBestProvider(providerList, undefined, undefined, effectiveLimits.minQualityScore);
 
     const winnerApi = searchedCandidates.find((a) => a.id === bestProvider?.id) || eligibleForDecision[0];
     const winnerComp = comparisons.find((c) => c.api.id === winnerApi.id);
 
-    // Build Rationale Audit String
-    const rationale = `Selected '${winnerApi.name}' because it achieved the highest composite decision score (${winnerComp?.overallScore || 92.5}/100) matching your '${intent.category}' task with ${intent.priority} priority optimization at ${winnerApi.price} per request.`;
+    const sourceTag = intent.parserSource === "deepseek" ? " (Parsed via DeepSeek AI)" : "";
+
+    const rationale = `Selected '${winnerApi.name}' because it achieved the highest composite decision score (${winnerComp?.overallScore || 92.5}/100) matching your '${intent.category}' task with ${intent.priority} priority optimization at ${winnerApi.price} per request${sourceTag}.`;
 
     return {
       prompt,

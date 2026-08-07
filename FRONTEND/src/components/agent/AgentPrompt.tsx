@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Zap, FileText, Globe, Key, ShieldCheck, Activity, Camera, MapPin } from 'lucide-react';
+import { Sparkles, ArrowRight, Bot } from 'lucide-react';
 
 interface AgentPromptProps {
   prompt: string;
@@ -29,42 +29,42 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       style={{
-        borderRadius: 24,
-        backgroundColor: 'rgba(15, 15, 20, 0.85)',
-        border: '1px solid rgba(0, 229, 255, 0.25)',
-        padding: '32px 36px',
-        boxShadow: '0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 210, 255, 0.08)',
+        borderRadius: 20,
+        backgroundColor: 'rgba(14, 14, 16, 0.95)',
+        border: '1px solid rgba(255, 255, 255, 0.07)',
+        padding: '28px 32px',
+        boxShadow: '0 4px 32px rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(20px)',
         marginBottom: 32,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <div
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(168, 85, 247, 0.2))',
-            border: '1px solid rgba(0, 229, 255, 0.4)',
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Sparkles size={20} color="#00e5ff" />
+          <Bot size={18} color="#888888" />
         </div>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontFamily: 'Inter', fontSize: 16, fontWeight: 600, color: '#e0e0e0', margin: 0 }}>
             AI Agent Task Prompt
           </h2>
-          <p style={{ fontSize: 13, color: '#888899', margin: 0, marginTop: 2 }}>
-            Enter your requirements. The agent will discover, compare, and purchase the optimal API for you.
+          <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#555555', margin: 0, marginTop: 2 }}>
+            Describe your requirement. The autonomous engine will discover, evaluate policy, and purchase the best API.
           </p>
         </div>
       </div>
 
       {/* Main Textarea */}
-      <div style={{ position: 'relative', marginTop: 20 }}>
+      <div style={{ position: 'relative', marginTop: 16 }}>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -74,25 +74,25 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
           style={{
             width: '100%',
             padding: '16px 20px',
-            borderRadius: 16,
+            borderRadius: 14,
             backgroundColor: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#ffffff',
-            fontSize: 15,
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            color: '#e0e0e0',
+            fontSize: 14,
             fontFamily: "'Inter', sans-serif",
             lineHeight: 1.6,
             outline: 'none',
             resize: 'vertical',
             boxSizing: 'border-box',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
+            transition: 'all 0.2s ease',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#00e5ff';
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 229, 255, 0.15)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
           }}
         />
       </div>
@@ -100,7 +100,7 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
       {/* Shortcuts & Action Row */}
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#666677', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 10 }}>
+          <span style={{ fontFamily: 'Inter', fontSize: 11, fontWeight: 600, color: '#444444', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 10 }}>
             Example Prompts (Click to Use)
           </span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -113,23 +113,23 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
                 style={{
                   padding: '7px 13px',
                   borderRadius: 10,
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  color: '#cccccc',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  color: '#666666',
                   fontSize: 12,
                   fontFamily: 'Inter',
                   cursor: isRunning ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 229, 255, 0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)';
-                  e.currentTarget.style.color = '#00e5ff';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
+                  e.currentTarget.style.color = '#cccccc';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.color = '#cccccc';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.color = '#666666';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
                 }}
               >
                 {ex.label}
@@ -139,7 +139,7 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
         </div>
 
         {/* Start Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
           <button
             type="button"
             onClick={onStartAgent}
@@ -147,30 +147,35 @@ export default function AgentPrompt({ prompt, setPrompt, onStartAgent, isRunning
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 10,
-              padding: '14px 28px',
-              borderRadius: 14,
-              background: isRunning || !prompt.trim()
-                ? 'rgba(255, 255, 255, 0.1)'
-                : 'linear-gradient(135deg, #00e5ff 0%, #00a8ff 100%)',
-              color: isRunning || !prompt.trim() ? '#666677' : '#000000',
-              fontSize: 15,
-              fontWeight: 700,
+              gap: 8,
+              padding: '12px 24px',
+              borderRadius: 12,
+              backgroundColor: isRunning || !prompt.trim()
+                ? 'rgba(255, 255, 255, 0.04)'
+                : 'rgba(255, 255, 255, 0.09)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: isRunning || !prompt.trim() ? '#444444' : '#ffffff',
+              fontSize: 14,
+              fontWeight: 600,
               fontFamily: 'Inter',
-              border: 'none',
               cursor: isRunning || !prompt.trim() ? 'not-allowed' : 'pointer',
-              boxShadow: isRunning || !prompt.trim() ? 'none' : '0 10px 30px rgba(0, 229, 255, 0.35)',
-              transition: 'transform 0.15s ease, opacity 0.2s',
+              transition: 'all 0.2s ease',
             }}
-            onMouseDown={(e) => {
-              if (!isRunning && prompt.trim()) e.currentTarget.style.transform = 'scale(0.97)';
+            onMouseEnter={(e) => {
+              if (!isRunning && prompt.trim()) {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.14)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+              }
             }}
-            onMouseUp={(e) => {
-              if (!isRunning && prompt.trim()) e.currentTarget.style.transform = 'scale(1)';
+            onMouseLeave={(e) => {
+              if (!isRunning && prompt.trim()) {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.09)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              }
             }}
           >
-            <span>{isRunning ? 'Agent Executing...' : 'Start Agent'}</span>
-            <ArrowRight size={18} />
+            <span>{isRunning ? 'Executing Agent Pipeline...' : 'Start Agent'}</span>
+            <ArrowRight size={15} />
           </button>
         </div>
       </div>

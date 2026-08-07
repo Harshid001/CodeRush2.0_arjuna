@@ -2,7 +2,23 @@ import mongoose, { Schema } from "mongoose";
 import { generateId } from "../utils/ids";
 
 export type PaymentScheme = "exact" | "upto";
-export type ProviderCategory = "LLM & NLP" | "Computer Vision" | "Financial & Market Data" | "Code & DevTools" | "Audio & Speech" | "Web Scraping";
+export type ProviderCategory =
+  | "LLM & NLP"
+  | "Computer Vision"
+  | "Financial & Market Data"
+  | "Code & DevTools"
+  | "Audio & Speech"
+  | "Web Scraping"
+  | "OCR"
+  | "Translation"
+  | "Embeddings"
+  | "Text Generation"
+  | "Speech-to-Text"
+  | "Image Generation"
+  | "Moderation"
+  | "Risk Scoring"
+  | "Geocoding"
+  | "Sentiment Analysis";
 
 export interface IProvider {
   _id: string;
@@ -33,7 +49,24 @@ const ProviderSchema = new Schema<IProvider>(
     description: { type: String, required: true },
     category: {
       type: String,
-      enum: ["LLM & NLP", "Computer Vision", "Financial & Market Data", "Code & DevTools", "Audio & Speech", "Web Scraping"],
+      enum: [
+        "LLM & NLP",
+        "Computer Vision",
+        "Financial & Market Data",
+        "Code & DevTools",
+        "Audio & Speech",
+        "Web Scraping",
+        "OCR",
+        "Translation",
+        "Embeddings",
+        "Text Generation",
+        "Speech-to-Text",
+        "Image Generation",
+        "Moderation",
+        "Risk Scoring",
+        "Geocoding",
+        "Sentiment Analysis",
+      ],
       required: true,
     },
     price: { type: Number, required: true, min: 0 },

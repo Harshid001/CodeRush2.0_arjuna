@@ -1,151 +1,202 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Loader2, AlertCircle, Circle, ArrowDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CheckCircle2, Loader2, AlertCircle, Circle, KeyRound, Zap } from 'lucide-react';
+import type { AgentStage } from '@/context/AgentContext';
 
-export interface TimelineStep {
+export interface TimelineStepItem {
   id: string;
+  stageKey: AgentStage;
   label: string;
   description: string;
   status: 'pending' | 'active' | 'completed' | 'failed';
   details?: string;
 }
 
+export const AGENT_PIPELINE_STEPS: { id: string; stageKey: AgentStage; label: string; description: string }[] = [
+  { id: '1', stageKey: 'understanding_request', label: 'Understanding Request', description: 'DeepSeek V4 Pro parsing category, priority, and budget constraints.' },
+  { id: '2', stageKey: 'searching_marketplace', label: 'Searching Marketplace', description: 'Querying verified provider registry for active candidate nodes.' },
+  { id: '3', stageKey: 'comparing_providers', label: 'Comparing Providers', description: 'Evaluating quality score, pricing, latency, and SLA reliability math.' },
+  { id: '4', stageKey: 'running_policy_engine', label: 'Running Policy Engine', description: 'Enforcing per-request budget, daily max limits, and safety allowlist.' },
+  { id: '5', stageKey: 'running_decision_engine', label: 'Running Decision Engine', description: 'Computing weighted matrix scores and ranking candidate providers.' },
+  { id: '6', stageKey: 'selecting_provider', label: 'Selecting Provider', description: 'Generating selection rationale and policy exclusion audit logs.' },
+  { id: '7', stageKey: 'creating_payment_session', label: 'Creating Payment Session', description: 'Structuring x402 cryptographic payment requirements.' },
+  { id: '8', stageKey: 'waiting_wallet_signature', label: 'Waiting For Wallet Signature', description: 'Awaiting Lute Wallet transaction signature approval...' },
+  { id: '9', stageKey: 'payment_confirmed', label: 'Payment Confirmed', description: 'Settling AVM payment transaction on Algorand Testnet.' },
+  { id: '10', stageKey: 'provider_executed', label: 'Provider Executed', description: 'Executing provider node endpoint & receiving output payload.' },
+  { id: '11', stageKey: 'receipt_generated', label: 'Receipt Generated', description: 'Issuing verifiable cryptographic receipt with SHA-256 hashes.' },
+  { id: '12', stageKey: 'invoice_generated', label: 'Invoice Generated', description: 'Itemized invoice generated and ready for PDF download.' },
+];
+
 interface AgentTimelineProps {
-  steps: TimelineStep[];
+  currentStage: AgentStage;
   currentStepIndex: number;
+  winnerName?: string;
+  winnerPrice?: string;
+  onBypassSignature?: () => void;
 }
 
-export default function AgentTimeline({ steps, currentStepIndex }: AgentTimelineProps) {
+export default function AgentTimeline({ currentStage, currentStepIndex, winnerName, winnerPrice, onBypassSignature }: AgentTimelineProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.1 }}
+      transition={{ duration: 0.4 }}
       style={{
-        borderRadius: 24,
-        backgroundColor: 'rgba(15, 15, 20, 0.85)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        padding: '32px 36px',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+        borderRadius: 20,
+        backgroundColor: 'rgba(14, 14, 16, 0.95)',
+        border: '1px solid rgba(255, 255, 255, 0.07)',
+        padding: '28px 32px',
+        boxShadow: '0 4px 32px rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(20px)',
         marginBottom: 32,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', margin: 0 }}>
-          Autonomous Execution Timeline
-        </h3>
-        <span style={{ fontSize: 12, color: '#00e5ff', fontFamily: 'monospace', fontWeight: 600 }}>
-          {currentStepIndex >= 0 && currentStepIndex < steps.length
-            ? `Step ${currentStepIndex + 1} of ${steps.length}`
-            : currentStepIndex >= steps.length
-            ? 'Execution Completed'
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#5a9a5a', display: 'block', boxShadow: '0 0 8px rgba(90,154,90,0.8)' }} />
+          <h3 style={{ fontFamily: 'Inter', fontSize: 15, fontWeight: 600, color: '#e0e0e0', margin: 0 }}>
+            Autonomous Execution Pipeline
+          </h3>
+        </div>
+        <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#888888', fontWeight: 500 }}>
+          {currentStepIndex >= 0 && currentStepIndex < AGENT_PIPELINE_STEPS.length
+            ? `Step ${currentStepIndex + 1} of ${AGENT_PIPELINE_STEPS.length}`
+            : currentStage === 'completed'
+            ? '12 of 12 Completed'
             : 'Idle'}
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {steps.map((step, idx) => {
-          const isDone = step.status === 'completed';
-          const isActive = step.status === 'active';
-          const isFailed = step.status === 'failed';
-          const isPending = step.status === 'pending';
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {AGENT_PIPELINE_STEPS.map((step, idx) => {
+          const isDone = currentStepIndex > idx || currentStage === 'completed';
+          const isActive = currentStepIndex === idx && currentStage !== 'completed' && currentStage !== 'failed';
+          const isFailed = currentStage === 'failed' && currentStepIndex === idx;
+
+          let stepDetails: string | undefined = undefined;
+          if (step.stageKey === 'selecting_provider' && winnerName && isDone) {
+            stepDetails = `Selected: ${winnerName} (${winnerPrice || '$0.05'})`;
+          }
+          if (step.stageKey === 'waiting_wallet_signature' && isActive) {
+            stepDetails = '🔑 Lute Wallet signature requested. Approve in your browser extension or click Auto-Sign below.';
+          }
 
           return (
-            <React.Fragment key={step.id}>
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 16,
-                  padding: '14px 18px',
-                  borderRadius: 14,
-                  backgroundColor: isActive
-                    ? 'rgba(0, 229, 255, 0.08)'
-                    : isDone
-                    ? 'rgba(16, 185, 129, 0.05)'
-                    : isFailed
-                    ? 'rgba(239, 68, 68, 0.08)'
-                    : 'rgba(255, 255, 255, 0.02)',
-                  border: isActive
-                    ? '1px solid rgba(0, 229, 255, 0.3)'
-                    : isDone
-                    ? '1px solid rgba(16, 185, 129, 0.2)'
-                    : isFailed
-                    ? '1px solid rgba(239, 68, 68, 0.3)'
-                    : '1px solid rgba(255, 255, 255, 0.05)',
-                  transition: 'all 0.25s ease',
-                }}
-              >
-                {/* Step Icon */}
-                <div style={{ marginTop: 2, flexShrink: 0 }}>
-                  {isDone ? (
-                    <CheckCircle2 size={18} color="#10b981" />
-                  ) : isActive ? (
-                    <Loader2 size={18} color="#00e5ff" className="animate-spin-slow" />
-                  ) : isFailed ? (
-                    <AlertCircle size={18} color="#ef4444" />
+            <motion.div
+              key={step.id}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: idx * 0.02 }}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 14,
+                padding: '12px 16px',
+                borderRadius: 12,
+                backgroundColor: isActive
+                  ? 'rgba(255, 255, 255, 0.05)'
+                  : isDone
+                  ? 'rgba(74, 138, 74, 0.05)'
+                  : isFailed
+                  ? 'rgba(239, 68, 68, 0.06)'
+                  : 'rgba(255, 255, 255, 0.02)',
+                border: isActive
+                  ? '1px solid rgba(255, 255, 255, 0.14)'
+                  : isDone
+                  ? '1px solid rgba(74, 138, 74, 0.2)'
+                  : isFailed
+                  ? '1px solid rgba(239, 68, 68, 0.2)'
+                  : '1px solid rgba(255, 255, 255, 0.04)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {/* Step Icon */}
+              <div style={{ marginTop: 2, flexShrink: 0 }}>
+                {isDone ? (
+                  <CheckCircle2 size={16} color="#5a9a5a" />
+                ) : isActive ? (
+                  step.stageKey === 'waiting_wallet_signature' ? (
+                    <KeyRound size={16} color="#e0e0e0" className="animate-pulse" />
                   ) : (
-                    <Circle size={18} color="#444455" />
-                  )}
+                    <Loader2 size={16} color="#aaaaaa" className="animate-spin" />
+                  )
+                ) : isFailed ? (
+                  <AlertCircle size={16} color="#ef4444" />
+                ) : (
+                  <Circle size={16} color="#333333" />
+                )}
+              </div>
+
+              {/* Step Info */}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span
+                    style={{
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: isDone
+                        ? '#5a9a5a'
+                        : isActive
+                        ? '#ffffff'
+                        : isFailed
+                        ? '#ef4444'
+                        : '#555555',
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                  <span style={{ fontSize: 10, fontFamily: 'Inter', color: '#444444', textTransform: 'uppercase' }}>
+                    {isDone ? 'COMPLETED' : isActive ? 'IN PROGRESS' : isFailed ? 'FAILED' : 'PENDING'}
+                  </span>
                 </div>
 
-                {/* Step Text & Details */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isDone
-                          ? '#10b981'
-                          : isActive
-                          ? '#00e5ff'
-                          : isFailed
-                          ? '#ef4444'
-                          : '#888899',
-                      }}
-                    >
-                      {step.label}
-                    </span>
-                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#666677' }}>
-                      {step.status.toUpperCase()}
-                    </span>
-                  </div>
+                <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#666666', margin: 0, marginTop: 3, lineHeight: 1.4 }}>
+                  {step.description}
+                </p>
 
-                  <p style={{ fontSize: 12, color: '#9999aa', margin: 0, marginTop: 4, lineHeight: 1.4 }}>
-                    {step.description}
-                  </p>
-
-                  {step.details && (
+                {stepDetails && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                     <div
                       style={{
-                        marginTop: 8,
-                        padding: '6px 10px',
-                        borderRadius: 8,
+                        padding: '4px 8px',
+                        borderRadius: 6,
                         backgroundColor: 'rgba(0, 0, 0, 0.3)',
                         fontSize: 11,
-                        fontFamily: 'monospace',
-                        color: '#00e5ff',
+                        fontFamily: 'Inter',
+                        color: isActive ? '#ffffff' : '#5a9a5a',
                       }}
                     >
-                      {step.details}
+                      {stepDetails}
                     </div>
-                  )}
-                </div>
-              </motion.div>
 
-              {idx < steps.length - 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', margin: '-8px 0 -8px 24px' }}>
-                  <div style={{ width: 2, height: 12, backgroundColor: isDone ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.08)' }} />
-                </div>
-              )}
-            </React.Fragment>
+                    {step.stageKey === 'waiting_wallet_signature' && isActive && onBypassSignature && (
+                      <button
+                        onClick={onBypassSignature}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          fontFamily: 'Inter',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Zap size={11} color="#5a9a5a" /> Skip / Auto-Sign (Demo)
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           );
         })}
       </div>

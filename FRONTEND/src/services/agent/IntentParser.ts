@@ -1,8 +1,5 @@
-/**
- * LIGHTWEIGHT DETERMINISTIC INTENT PARSER
- * Evaluates natural language user prompts into structured search & decision parameters.
- * Does NOT use an external LLM. Uses deterministic keyword & pattern matching.
- */
+import { deepSeekService } from '@/services/ai/deepseek.service';
+import type { DeepSeekIntentResponse } from '@/types/agent.types';
 
 export type AgentCategory =
   | "OCR"
@@ -25,7 +22,32 @@ export interface ParsedIntent {
   maxBudgetUSD?: number;
   extractedKeywords: string[];
   confidence: number;
+  parserSource?: "deepseek" | "deterministic";
 }
+
+const CATEGORY_MAP: Record<string, AgentCategory> = {
+  ocr: "OCR",
+  translation: "Translation",
+  embeddings: "Embeddings",
+  "speech-to-text": "Speech-to-Text",
+  "text generation": "Text Generation",
+  moderation: "Moderation",
+  "risk scoring": "Risk Scoring",
+  "image generation": "Image Generation",
+  geocoding: "Geocoding",
+};
+
+const PRIORITY_MAP: Record<string, AgentPriority> = {
+  "lowest price": "cost",
+  cost: "cost",
+  "highest quality": "quality",
+  quality: "quality",
+  "lowest latency": "latency",
+  latency: "latency",
+  "highest reliability": "reliability",
+  reliability: "reliability",
+  balanced: "balanced",
+};
 
 const CATEGORY_KEYWORDS: Record<AgentCategory, string[]> = {
   OCR: ["ocr", "invoice", "receipt", "scan", "document", "extract text", "pdf text", "pdf parsing", "image text", "handwriting"],
@@ -49,7 +71,55 @@ const PRIORITY_KEYWORDS: Record<AgentPriority, string[]> = {
 };
 
 export class IntentParser {
+  /**
+   * Async Intent Parsing:
+   * First calls DeepSeek via server route /api/agent to extract structured JSON.
+   * Fallbacks gracefully to deterministic parsing if DeepSeek is unavailable.
+   */
+  public async parseAsync(prompt: string): Promise<ParsedIntent> {
+    try {
+      const res: DeepSeekIntentResponse = await deepSeekService.parseIntent(prompt);
+      const catLower = (res.category || "").toLowerCase();
+      const prioLower = (res.priority || "").toLowerCase();
+
+      const matchedCategory: AgentCategory =
+        CATEGORY_MAP[catLower] ||
+        (Object.keys(CATEGORY_KEYWORDS).find((c) => c.toLowerCase() === catLower) as AgentCategory) ||
+        this.parseDeterministic(prompt).category;
+
+      const matchedPriority: AgentPriority =
+        PRIORITY_MAP[prioLower] ||
+        (Object.keys(PRIORITY_KEYWORDS).find((p) => p.toLowerCase() === prioLower) as AgentPriority) ||
+        "balanced";
+
+      const budgetVal = typeof res.budget === "number" && res.budget > 0 ? res.budget : undefined;
+
+      return {
+        rawPrompt: prompt,
+        category: matchedCategory,
+        priority: matchedPriority,
+        maxBudgetUSD: budgetVal,
+        extractedKeywords: res.constraints || [],
+        confidence: 0.98,
+        parserSource: "deepseek",
+      };
+    } catch (err) {
+      console.warn("[IntentParser] DeepSeek parse failed, falling back to deterministic parser:", err);
+      return {
+        ...this.parseDeterministic(prompt),
+        parserSource: "deterministic",
+      };
+    }
+  }
+
+  /**
+   * Deterministic Keyword Parser (Fallback)
+   */
   public parse(prompt: string): ParsedIntent {
+    return this.parseDeterministic(prompt);
+  }
+
+  private parseDeterministic(prompt: string): ParsedIntent {
     const clean = prompt.toLowerCase().trim();
 
     // 1. Detect Category
@@ -98,7 +168,6 @@ export class IntentParser {
       }
     }
 
-    // 4. Calculate Confidence Score (0.60 to 0.98)
     const confidence = Math.min(0.98, Math.max(0.65, 0.65 + maxCategoryMatches * 0.1));
 
     return {
@@ -108,6 +177,7 @@ export class IntentParser {
       maxBudgetUSD,
       extractedKeywords: Array.from(new Set(extractedKeywords)),
       confidence: parseFloat(confidence.toFixed(2)),
+      parserSource: "deterministic",
     };
   }
 }

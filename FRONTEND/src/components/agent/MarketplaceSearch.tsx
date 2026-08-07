@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Database, Star, Zap, Clock, ShieldCheck } from 'lucide-react';
+import { Database, Star, Clock } from 'lucide-react';
 import type { MarketplaceApi } from '@/lib/data/marketplaceApis';
 
 interface MarketplaceSearchProps {
@@ -20,35 +20,36 @@ export default function MarketplaceSearch({ candidates, category }: MarketplaceS
       transition={{ duration: 0.4 }}
       style={{
         borderRadius: 20,
-        backgroundColor: 'rgba(15, 15, 20, 0.85)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(14, 14, 16, 0.95)',
+        border: '1px solid rgba(255, 255, 255, 0.07)',
         padding: '24px 28px',
         marginBottom: 32,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Database size={18} color="#00e5ff" />
-          <h4 style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', margin: 0 }}>
-            Marketplace Discovery ({candidates.length} Providers Found)
+          <Database size={16} color="#888888" />
+          <h4 style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#e0e0e0', margin: 0 }}>
+            Marketplace Discovery ({candidates.length} Candidate Providers)
           </h4>
         </div>
         <span
           style={{
+            fontFamily: 'Inter',
             fontSize: 11,
             padding: '3px 10px',
-            borderRadius: 999,
-            backgroundColor: 'rgba(0, 229, 255, 0.1)',
-            border: '1px solid rgba(0, 229, 255, 0.25)',
-            color: '#00e5ff',
-            fontWeight: 600,
+            borderRadius: 100,
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            color: '#888888',
+            fontWeight: 500,
           }}
         >
           Category: {category}
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
         {candidates.map((api) => (
           <div
             key={api.id}
@@ -56,7 +57,7 @@ export default function MarketplaceSearch({ candidates, category }: MarketplaceS
               padding: 16,
               borderRadius: 14,
               backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -65,22 +66,22 @@ export default function MarketplaceSearch({ candidates, category }: MarketplaceS
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>{api.name}</div>
-                <div style={{ fontSize: 11, color: '#888899', marginTop: 2 }}>{api.provider || 'Enterprise Node'}</div>
+                <div style={{ fontFamily: 'Inter', fontSize: 13, fontWeight: 600, color: '#e0e0e0' }}>{api.name}</div>
+                <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#555555', marginTop: 2 }}>{api.provider || 'Verified Node'}</div>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#00e5ff', fontFamily: 'monospace' }}>
+              <span style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 600, color: '#cccccc' }}>
                 {api.price}
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#aaaabb' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#fbbf24' }}>
-                <Star size={12} fill="#fbbf24" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, fontFamily: 'Inter', color: '#888888' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#5a9a5a' }}>
+                <Star size={11} fill="#5a9a5a" color="#5a9a5a" />
                 <span>{api.qualityScore || 90}% Quality</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Clock size={12} color="#888899" />
+                <Clock size={11} color="#666666" />
                 <span>{api.latency || 120}ms</span>
               </div>
             </div>

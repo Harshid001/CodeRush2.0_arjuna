@@ -2,16 +2,43 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { Clock, CheckCircle2, Download, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import type { AgentExecutionRecord } from '@/services/agent/ExecutionService';
 
-interface AgentHistoryProps {
+interface ExecutionHistoryProps {
   history: AgentExecutionRecord[];
 }
 
-export default function AgentHistory({ history }: AgentHistoryProps) {
+export default function ExecutionHistory({ history }: ExecutionHistoryProps) {
   if (history.length === 0) return null;
+
+  const handleDownloadInvoiceRecord = (entry: AgentExecutionRecord) => {
+    const invoiceData = {
+      invoiceNumber: entry.invoiceId || `inv_${entry.id}`,
+      receiptId: entry.receiptId,
+      date: entry.timestamp,
+      status: 'PAID',
+      lineItems: [
+        {
+          description: `API Session - ${entry.winnerName} (${entry.category})`,
+          price: entry.winnerPrice,
+        },
+      ],
+      totalPaidUSD: entry.winnerPrice,
+      transactionHash: entry.transactionHash,
+      decisionScore: `${entry.decisionScore}/100`,
+      rationale: entry.rationale,
+    };
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(invoiceData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `invoice-${entry.invoiceId || entry.id}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   return (
     <motion.div
@@ -29,7 +56,7 @@ export default function AgentHistory({ history }: AgentHistoryProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Clock size={16} color="#888888" />
         <h3 style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: 600, color: '#e0e0e0', margin: 0 }}>
-          Agent Execution History Audit Log
+          Autonomous Execution Audit History
         </h3>
       </div>
 
@@ -72,47 +99,51 @@ export default function AgentHistory({ history }: AgentHistoryProps) {
               <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#555555', lineHeight: 1.4 }}>{entry.rationale}</div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: 'Inter', fontSize: 12, fontWeight: 600, color: '#cccccc' }}>{entry.winnerName}</div>
                 <div style={{ fontFamily: 'Inter', fontSize: 11, color: '#5a9a5a' }}>{entry.winnerPrice}</div>
               </div>
 
-              {entry.receiptId ? (
-                <Link
-                  href="/provenance"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '5px 10px',
-                    borderRadius: 8,
-                    backgroundColor: 'rgba(74, 138, 74, 0.08)',
-                    border: '1px solid rgba(74, 138, 74, 0.2)',
-                    color: '#5a9a5a',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily: 'Inter',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <CheckCircle2 size={12} /> Receipt <ArrowUpRight size={10} />
-                </Link>
-              ) : (
-                <span
-                  style={{
-                    padding: '5px 10px',
-                    borderRadius: 8,
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    color: '#555555',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    fontFamily: 'Inter',
-                  }}
-                >
-                  {entry.paymentStatus}
-                </span>
-              )}
+              <button
+                onClick={() => handleDownloadInvoiceRecord(entry)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: '#cccccc',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  fontFamily: 'Inter',
+                  cursor: 'pointer',
+                }}
+              >
+                <Download size={11} /> Invoice
+              </button>
+
+              <Link
+                href="/provenance"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(74, 138, 74, 0.08)',
+                  border: '1px solid rgba(74, 138, 74, 0.2)',
+                  color: '#5a9a5a',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontFamily: 'Inter',
+                  textDecoration: 'none',
+                }}
+              >
+                <CheckCircle2 size={12} /> Receipt <ArrowUpRight size={10} />
+              </Link>
             </div>
           </div>
         ))}

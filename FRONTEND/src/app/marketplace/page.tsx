@@ -11,10 +11,11 @@ import Footer from '@/components/Footer';
 import CatalogTable, { CatalogItem } from '@/components/CatalogTable';
 import Link from 'next/link';
 import { apis } from '@/lib/data/marketplaceApis';
+import ModeSelector from '@/components/ModeSelector';
 
 const ICONS: Record<string, React.ElementType> = { brain: Brain, eye: Eye, mic: Mic, code: Code2, activity: Activity, database: Database, globe: Globe, zap: Zap };
 
-const CATS = ['All', 'Language Models', 'Computer Vision', 'Audio & Speech', 'Data & Analytics', 'Code & Dev', 'Embeddings'];
+const CATS = ['All', 'OCR', 'Translation', 'Embeddings', 'Text Generation', 'Speech-to-Text', 'Image Generation', 'Moderation', 'Risk Scoring', 'Geocoding', 'Sentiment Analysis', 'Language Models', 'Computer Vision', 'Audio & Speech', 'Data & Analytics', 'Code & Dev'];
 const CHAINS = ['All', 'Ethereum', 'Solana', 'Polygon', 'Arbitrum', 'Base'];
 const MODELS = ['All', 'Pay-per-Request', 'Usage Cap', 'Freemium'];
 
@@ -162,6 +163,9 @@ export default function MarketplacePage() {
       <Navbar />
       <main style={{ paddingTop: 100, paddingBottom: 120 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+          
+          {/* Mode Switcher */}
+          <ModeSelector currentMode="manual" />
 
           {/* header */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 48 }}>
