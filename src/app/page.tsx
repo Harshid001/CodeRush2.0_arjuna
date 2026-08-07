@@ -165,7 +165,7 @@ export default function Home() {
   const fadeUp = (delay = 0) => ({
     initial: { opacity: 0, y: 28 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.75, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   });
 
   return (
@@ -234,7 +234,7 @@ export default function Home() {
             </div>
 
             {/* Right — dashboard mockup */}
-            <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
               style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 60 }}>
               <MockDashboard />
             </motion.div>

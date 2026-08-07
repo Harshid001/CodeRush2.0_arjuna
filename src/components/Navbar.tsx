@@ -30,6 +30,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Fallback demo wallet state when no browser extension is detected
   const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
@@ -44,6 +45,11 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
   const activeAddress = address || demoWalletAddress;
   const activeIsConnected = isConnected || !!demoWalletAddress;
   const isWrongNetwork = isConnected && chainId !== baseSepolia.id;
+
+  // Wagmi's store can restore a persisted connection synchronously during
+  // hydration, causing a server/client mismatch. Render the server snapshot
+  // until mounted, then reveal the real wallet state.
+  const hydratedConnected = mounted ? activeIsConnected : false;
 
   // Fetch real ETH balance on Base Sepolia
   const { data: ethBalanceData } = useBalance({
@@ -68,7 +74,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
   // Formatted balances
   const formattedEth = ethBalanceData
-    ? `${parseFloat(ethBalanceData.formatted).toFixed(4)} ETH`
+    ? `${(Number(ethBalanceData.value) / 10 ** ethBalanceData.decimals).toFixed(4)} ETH`
     : isConnected
     ? '0.0000 ETH'
     : '0.0450 ETH';
@@ -80,6 +86,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
     : '125.50 USDC';
 
   useEffect(() => {
+    setMounted(true);
     const fn = () => setScrolled(window.scrollY > 24);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
@@ -257,7 +264,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
             {/* Wallet Button & Dropdown */}
             <div style={{ position: 'relative' }}>
-              {!activeIsConnected ? (
+              {!hydratedConnected ? (
                 <button
                   onClick={handleConnect}
                   style={{
@@ -300,7 +307,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
 
               {/* Wallet Dropdown Menu */}
               <AnimatePresence>
-                {activeIsConnected && dropdownOpen && (
+                {hydratedConnected && dropdownOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -478,7 +485,7 @@ export default function Navbar({ hideLinks = false }: { hideLinks?: boolean }) {
                   </Link>
                 ))}
 
-                {!activeIsConnected ? (
+                {!hydratedConnected ? (
                   <button
                     onClick={() => {
                       handleConnect();
