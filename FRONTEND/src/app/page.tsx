@@ -232,30 +232,30 @@ export default function Home() {
 
               {/* CTAs */}
               <motion.div {...fadeUp(0.3)} style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                <Link href="/marketplace" style={{
+                <Link href="/agent" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '14px 28px', borderRadius: 13,
-                  background: '#f0f0f0', color: '#050505',
-                  fontFamily: 'Inter', fontWeight: 600, fontSize: 14, textDecoration: 'none',
-                  boxShadow: '0 4px 24px rgba(255,255,255,0.12)', transition: 'all 0.25s ease',
+                  background: 'linear-gradient(135deg, #00e5ff 0%, #00a8ff 100%)', color: '#050505',
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 14, textDecoration: 'none',
+                  boxShadow: '0 8px 30px rgba(0, 229, 255, 0.35)', transition: 'all 0.25s ease',
                 }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#ffffff'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
                 >
-                  Explore Marketplace <ArrowRight size={15} />
+                  🤖 AI Marketplace Agent <ArrowRight size={16} />
                 </Link>
 
-                <Link href="/dashboard" style={{
+                <Link href="/marketplace" style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '14px 24px', borderRadius: 13,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#999', fontFamily: 'Inter', fontWeight: 500, fontSize: 14, textDecoration: 'none',
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#ffffff', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, textDecoration: 'none',
                   transition: 'all 0.25s ease',
                 }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLAnchorElement).style.color = '#e0e0e0'; }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#999'; }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)'; }}
                 >
-                  View Dashboard
+                  🛒 Manual Marketplace
                 </Link>
               </motion.div>
             </div>

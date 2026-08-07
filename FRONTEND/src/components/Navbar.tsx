@@ -8,12 +8,12 @@ import { useAlgorandBalance } from '@/hooks/useAlgorandBalance';
 import { useAuth } from '@/context/AuthContext';
 
 const links = [
+  { label: 'AI Agent 🤖', href: '/agent' },
   { label: 'Marketplace', href: '/marketplace' },
   { label: 'Dashboard',   href: '/dashboard' },
   { label: 'Trace Viewer', href: '/trace' },
   { label: 'Provenance',  href: '/provenance' },
   { label: 'Compare APIs', href: '/compare' },
-  { label: 'AI Advisor',  href: '/agent-advisor' },
 ];
 
 export default function Navbar({
