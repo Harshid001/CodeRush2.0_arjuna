@@ -164,6 +164,18 @@
       "active": true
     },
     {
+      "providerId": "prov_ocr_space",
+      "name": "OCR.space Document Reader",
+      "category": "vision",
+      "description": "Cloud OCR API for extracting text from images, PDFs, and scanned documents with high accuracy.",
+      "endpoint": "/api/providers/ocr-space",
+      "payTo": "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4",
+      "priceMicroUsdc": 10000,
+      "priceDisplay": "$0.01 / request",
+      "unit": "per_request",
+      "active": true
+    },
+    {
       "providerId": "prov_demo_live",
       "name": "Demo Provider (Live Judge Wallet)",
       "category": "demo",

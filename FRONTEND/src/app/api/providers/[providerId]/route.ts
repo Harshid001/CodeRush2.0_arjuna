@@ -148,8 +148,26 @@ facilitatorClient.settle = async (payload: any, requirements: any) => {
   }
 };
 
-const server = new x402ResourceServer(facilitatorClient);
-registerExactAvmScheme(server);
+// --- LAZY SERVER INITIALIZATION ---
+// Module-scope instantiation was silently crashing Vercel cold-starts.
+// Now initialized on first request so errors produce readable 500 JSON bodies.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _server: any = null;
+let _serverError: Error | null = null;
+
+function getServer() {
+  if (_serverError) throw _serverError;
+  if (_server) return _server;
+  try {
+    _server = new x402ResourceServer(facilitatorClient);
+    registerExactAvmScheme(_server);
+    return _server;
+  } catch (err: any) {
+    _serverError = err instanceof Error ? err : new Error(String(err));
+    console.error("[x402 Server] FATAL: Failed to initialize x402ResourceServer:", _serverError.message);
+    throw _serverError;
+  }
+}
 
 async function resolveFacilitatorFeePayer(): Promise<string | undefined> {
   try {
@@ -198,11 +216,13 @@ export async function GET(
   let paymentId = request.headers.get("x-payment-id");
   let isNewChallenge = false;
 
-  console.error("[X402 SERVER REQUEST]", {
+  console.log("[X402 SERVER REQUEST]", {
     authorizationPresent: !!paymentHeader,
     authorizationLength: paymentHeader ? paymentHeader.length : 0,
     providerId: provider.id,
     paymentId: paymentId || null,
+    env: process.env.NODE_ENV,
+    facilitatorUrl: FACILITATOR_URL,
   });
 
   const acceptsRequirements = {
@@ -282,32 +302,37 @@ export async function GET(
     return String(value);
   };
 
-  const protectedHandler = withX402(
-    baseHandler,
-    {
-      accepts: {
-        scheme: "exact",
-        network: ALGORAND_TESTNET_CAIP2,
-        payTo,
-        price: `$${provider.price.toFixed(4)}`,
-        ...(feePayerForRoute
-          ? {
-              extra: {
-                feePayer: feePayerForRoute,
-              },
-            }
-          : {}),
-      },
-      description: provider.description,
-    },
-    server,
-    undefined,
-    undefined,
-    true
-  );
-
   try {
     activePaymentId = paymentId;
+
+    // Initialise server inside try/catch so init failures produce a readable JSON 500 body
+    // (previously getServer() was called outside the try, causing empty 500 on Vercel cold-start)
+    const server = getServer();
+
+    const protectedHandler = withX402(
+      baseHandler,
+      {
+        accepts: {
+          scheme: "exact",
+          network: ALGORAND_TESTNET_CAIP2,
+          payTo,
+          price: `$${provider.price.toFixed(4)}`,
+          ...(feePayerForRoute
+            ? {
+                extra: {
+                  feePayer: feePayerForRoute,
+                },
+              }
+            : {}),
+        },
+        description: provider.description,
+      },
+      server,
+      undefined,
+      undefined,
+      true
+    );
+
     const res = await protectedHandler(request);
 
     res.headers.set(
