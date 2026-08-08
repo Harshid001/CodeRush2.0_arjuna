@@ -194,6 +194,30 @@ export default function AgentTimeline({ currentStage, currentStepIndex, winnerNa
                         <Zap size={11} color="#5a9a5a" /> Skip / Auto-Sign (Demo)
                       </button>
                     )}
+
+                    {step.stageKey === 'waiting_wallet_signature' && isActive && (
+                      <button
+                        onClick={() => window.open('https://lute.app', '_blank', 'noopener,noreferrer')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          backgroundColor: 'rgba(90, 154, 90, 0.15)',
+                          border: '1px solid rgba(90, 154, 90, 0.45)',
+                          color: '#7fd87f',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          fontFamily: 'Inter',
+                          cursor: 'pointer',
+                          marginLeft: 8,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <KeyRound size={11} color="#7fd87f" /> Open Lute Wallet
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
