@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Loader2, AlertCircle, Circle, KeyRound, Zap } from 'lucide-react';
 import type { AgentStage } from '@/context/AgentContext';
@@ -39,6 +39,22 @@ interface AgentTimelineProps {
 }
 
 export default function AgentTimeline({ currentStage, currentStepIndex, winnerName, winnerPrice, onBypassSignature }: AgentTimelineProps) {
+  // Auto-trigger Lute signing popup when the wallet signature step becomes active.
+  // We wait 1500ms to give the x402 flow time to build the transaction first.
+  useEffect(() => {
+    if (currentStage !== 'waiting_wallet_signature') return;
+    const timer = setTimeout(() => {
+      if ((window as any).lute) {
+        window.dispatchEvent(new CustomEvent('lute-connect', { detail: { action: 'sign' } }));
+      } else {
+        const left = 100 + window.screenX;
+        const top = 100 + window.screenY;
+        window.open('https://lute.app/sign', 'Lute', `width=500,height=750,left=${left},top=${top}`);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [currentStage]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -195,49 +211,7 @@ export default function AgentTimeline({ currentStage, currentStepIndex, winnerNa
                       </button>
                     )}
 
-                    {step.stageKey === 'waiting_wallet_signature' && isActive && (
-                      <button
-                        onClick={() => {
-                          // If Lute extension is installed, dispatch the same CustomEvent
-                          // that lute-connect uses to re-open the signing popup.
-                          // If extension is absent, open the Lute web sign UI (same fallback lute-connect uses).
-                          const luteExt = (window as any).lute;
-                          if (luteExt) {
-                            window.dispatchEvent(
-                              new CustomEvent('lute-connect', {
-                                detail: { action: 'sign' },
-                              })
-                            );
-                          } else {
-                            const left = 100 + window.screenX;
-                            const top = 100 + window.screenY;
-                            window.open(
-                              'https://lute.app/sign',
-                              'Lute',
-                              `width=500,height=750,left=${left},top=${top}`
-                            );
-                          }
-                        }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '5px 12px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(90, 154, 90, 0.15)',
-                          border: '1px solid rgba(90, 154, 90, 0.45)',
-                          color: '#7fd87f',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          fontFamily: 'Inter',
-                          cursor: 'pointer',
-                          marginLeft: 8,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <KeyRound size={11} color="#7fd87f" /> Open Lute Wallet
-                      </button>
-                    )}
+
                   </div>
                 )}
               </div>
