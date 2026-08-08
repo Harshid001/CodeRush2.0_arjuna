@@ -14,14 +14,24 @@ export interface ApiResponse<T> {
  * Check Backend Health
  */
 export async function checkBackendHealth(): Promise<{ running: boolean; message?: string }> {
-  try {
-    const res = await fetch(HEALTH_URL, { cache: "no-store" });
-    if (!res.ok) return { running: false };
-    const data = await res.json();
-    return { running: data.running ?? true, message: data.message };
-  } catch {
-    return { running: false };
+  const candidates: string[] = [HEALTH_URL];
+  if (HEALTH_URL.endsWith("/api/health")) {
+    // The health route is served at /health; tolerate a misconfigured /api/health env value.
+    candidates.push(HEALTH_URL.replace(/\/api\/health\/?$/, "/health"));
   }
+  if (!candidates.includes("/health")) candidates.push("/health");
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      return { running: data.running ?? true, message: data.message };
+    } catch {
+      // try next candidate
+    }
+  }
+  return { running: false };
 }
 
 /**

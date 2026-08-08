@@ -241,24 +241,33 @@ export async function GET(
 
   if (!paymentHeader) {
     // Stage 1: Server generates 402 challenge & server-observed paymentId
-    const { paymentId: newId } = createPaymentRecord(
-      provider.id,
-      provider.name,
-      acceptsRequirements
-    );
-    paymentId = newId;
+    // Provenance tracking is best-effort: never let a storage failure block the payment handshake.
+    try {
+      const { paymentId: newId } = createPaymentRecord(
+        provider.id,
+        provider.name,
+        acceptsRequirements
+      );
+      paymentId = newId;
+    } catch (err) {
+      console.warn("[x402] createPaymentRecord failed; continuing without provenance tracking:", err);
+    }
     isNewChallenge = true;
   } else if (paymentId) {
     // Stage 4: Payment submitted with paymentId
-    addProvenanceEvent(
-      paymentId,
-      "payment_submitted",
-      "server_observed",
-      "info",
-      "Signed Payment Payload Submitted",
-      `Server received signed payment payload for ${provider.name}.`,
-      { providerId: provider.id, hasAuthorizationHeader: true }
-    );
+    try {
+      addProvenanceEvent(
+        paymentId,
+        "payment_submitted",
+        "server_observed",
+        "info",
+        "Signed Payment Payload Submitted",
+        `Server received signed payment payload for ${provider.name}.`,
+        { providerId: provider.id, hasAuthorizationHeader: true }
+      );
+    } catch (err) {
+      console.warn("[x402] addProvenanceEvent (payment_submitted) failed:", err);
+    }
   }
 
   const baseHandler = async (_req: NextRequest) => {

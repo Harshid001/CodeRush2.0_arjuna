@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 
 export type ProvenanceSource = "server_observed" | "client_reported";
@@ -38,45 +39,76 @@ export interface ProvenanceRecord {
   events: ProvenanceEvent[];
 }
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const STORE_PATH = path.join(DATA_DIR, "provenance_records.json");
-const TMP_PATH = path.join(DATA_DIR, "provenance_records.tmp.json");
-
 // In-memory thread-safe singleton cache
 let memoryStore: Map<string, ProvenanceRecord> = new Map();
 let isInitialized = false;
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+// Writable location for the JSON store. Resolved lazily so serverless runtimes
+// (e.g. Vercel, where only /tmp is writable and the project root is read-only)
+// never crash on fs access. Falls back to memory-only mode if nothing is writable.
+let DATA_DIR: string | null = null;
+
+function getDataDir(): string | null {
+  if (DATA_DIR !== null) return DATA_DIR;
+  const tmpDir = path.join(os.tmpdir(), "nexusapi-provenance");
+  const appDir = path.join(process.cwd(), ".data");
+  const candidates = [
+    process.env.DATA_DIR,
+    ...(process.env.NODE_ENV === "production" ? [tmpDir, appDir] : [appDir, tmpDir]),
+  ].filter(Boolean) as string[];
+
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const probe = path.join(dir, `.write_test_${process.pid}_${Date.now()}`);
+      fs.writeFileSync(probe, "ok");
+      fs.unlinkSync(probe);
+      DATA_DIR = dir;
+      return DATA_DIR;
+    } catch {
+      // Not writable — try the next candidate.
+    }
   }
+
+  DATA_DIR = "";
+  return DATA_DIR;
+}
+
+function getStorePaths(): { store: string | null; tmp: string | null } {
+  const dir = getDataDir();
+  if (!dir) return { store: null, tmp: null };
+  return {
+    store: path.join(dir, "provenance_records.json"),
+    tmp: path.join(dir, "provenance_records.tmp.json"),
+  };
 }
 
 function loadFromDisk(): Map<string, ProvenanceRecord> {
-  ensureDataDir();
-  if (fs.existsSync(STORE_PATH)) {
-    try {
-      const raw = fs.readFileSync(STORE_PATH, "utf-8");
-      const parsed: Record<string, ProvenanceRecord> = JSON.parse(raw);
-      return new Map(Object.entries(parsed));
-    } catch (err) {
-      console.error("[ProvenanceStore] Error loading store from disk:", err);
-    }
+  try {
+    const { store } = getStorePaths();
+    if (!store || !fs.existsSync(store)) return new Map();
+    const raw = fs.readFileSync(store, "utf-8");
+    const parsed: Record<string, ProvenanceRecord> = JSON.parse(raw);
+    return new Map(Object.entries(parsed));
+  } catch (err) {
+    console.error("[ProvenanceStore] Error loading store from disk:", err);
+    return new Map();
   }
-  return new Map();
 }
 
 /**
  * ATOMIC FILE SAVE: Writes to temporary file first, then atomically renames it.
  * This guarantees a process crash or power interruption during write cannot corrupt the store.
+ * Never throws — degrades silently to memory-only mode when disk is unavailable.
  */
 function saveToDiskAtomic() {
-  ensureDataDir();
   try {
+    const { store, tmp } = getStorePaths();
+    if (!store || !tmp) return;
     const obj = Object.fromEntries(memoryStore.entries());
     const jsonStr = JSON.stringify(obj, null, 2);
-    fs.writeFileSync(TMP_PATH, jsonStr, "utf-8");
-    fs.renameSync(TMP_PATH, STORE_PATH);
+    fs.writeFileSync(tmp, jsonStr, "utf-8");
+    fs.renameSync(tmp, store);
   } catch (err) {
     console.error("[ProvenanceStore] Error saving store atomically to disk:", err);
   }
@@ -84,7 +116,12 @@ function saveToDiskAtomic() {
 
 function initStore() {
   if (!isInitialized) {
-    memoryStore = loadFromDisk();
+    try {
+      memoryStore = loadFromDisk();
+    } catch (err) {
+      console.error("[ProvenanceStore] Error initializing store from disk:", err);
+      memoryStore = new Map();
+    }
     isInitialized = true;
   }
 }
