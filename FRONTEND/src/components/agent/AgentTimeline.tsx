@@ -197,7 +197,27 @@ export default function AgentTimeline({ currentStage, currentStepIndex, winnerNa
 
                     {step.stageKey === 'waiting_wallet_signature' && isActive && (
                       <button
-                        onClick={() => window.open('https://lute.app', '_blank', 'noopener,noreferrer')}
+                        onClick={() => {
+                          // If Lute extension is installed, dispatch the same CustomEvent
+                          // that lute-connect uses to re-open the signing popup.
+                          // If extension is absent, open the Lute web sign UI (same fallback lute-connect uses).
+                          const luteExt = (window as any).lute;
+                          if (luteExt) {
+                            window.dispatchEvent(
+                              new CustomEvent('lute-connect', {
+                                detail: { action: 'sign' },
+                              })
+                            );
+                          } else {
+                            const left = 100 + window.screenX;
+                            const top = 100 + window.screenY;
+                            window.open(
+                              'https://lute.app/sign',
+                              'Lute',
+                              `width=500,height=750,left=${left},top=${top}`
+                            );
+                          }
+                        }}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
