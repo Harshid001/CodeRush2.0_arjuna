@@ -17,6 +17,7 @@ export type AgentStage =
   | 'waiting_wallet_signature'
   | 'payment_confirmed'
   | 'provider_executed'
+  | 'result_generated'
   | 'receipt_generated'
   | 'invoice_generated'
   | 'completed'

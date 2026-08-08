@@ -15,6 +15,7 @@ import ExecutionHistory from '@/components/agent/ExecutionHistory';
 import { marketplaceAgent, DecisionReport } from '@/services/agent/MarketplaceAgent';
 import { executionService, AgentExecutionRecord } from '@/services/agent/ExecutionService';
 import { intentService } from '@/services/agent/IntentService';
+import { providerExecutionService } from '@/lib/providers/ProviderExecutionService';
 import { usePaymentContext } from '@/context/PaymentContext';
 import { requestPaidResource } from '@/lib/x402/client';
 import { INITIAL_PROVIDERS } from '@/lib/data/providers';
@@ -161,31 +162,44 @@ export default function AgentPage() {
 
       const confirmedReceipt: Receipt = paymentResponse.receipt;
 
-      // Step 9: Payment Confirmed & Provider Executed
+      // Step 9: Payment Confirmed
       setStage('payment_confirmed');
       setCurrentStepIndex(8);
       await new Promise((r) => setTimeout(r, 300));
 
+      // Step 10: Provider Executed
       setStage('provider_executed');
       setCurrentStepIndex(9);
-      await new Promise((r) => setTimeout(r, 300));
+      const executionResult = await providerExecutionService.executeProvider(prompt, winnerProvider);
 
-      // Step 10 & 11: Receipt & Invoice Generation
+      // Step 11: Result Generated
+      setStage('result_generated');
+      setCurrentStepIndex(10);
+      await new Promise((r) => setTimeout(r, 400));
+
+      // Step 12: Receipt Generated
       addReceipt(confirmedReceipt);
       setReceipt(confirmedReceipt);
 
       setStage('receipt_generated');
-      setCurrentStepIndex(10);
+      setCurrentStepIndex(11);
       await new Promise((r) => setTimeout(r, 300));
 
-      // Step 12: Invoice Generated -> Completed
+      // Step 13: Invoice Generated -> Completed
       const txId = confirmedReceipt.settlement?.settlementId || `tx_${Date.now()}`;
-      const savedRecord = executionService.saveExecution(decisionReport, txId, confirmedReceipt.id);
+      const savedRecord = executionService.saveExecution(
+        decisionReport,
+        txId,
+        confirmedReceipt.id,
+        undefined,
+        executionResult.result,
+        executionResult.latency
+      );
       setRecord(savedRecord);
       setHistory(executionService.getHistory());
 
       setStage('invoice_generated');
-      setCurrentStepIndex(11);
+      setCurrentStepIndex(12);
       await new Promise((r) => setTimeout(r, 300));
 
       setStage('completed');
@@ -264,7 +278,7 @@ export default function AgentPage() {
             isRunning={isRunning}
           />
 
-          {/* 2. 12-Stage Animated Execution Timeline */}
+          {/* 2. 13-Stage Animated Execution Timeline */}
           {(isRunning || currentStepIndex >= 0) && (
             <AgentTimeline
               currentStage={stage}
@@ -282,13 +296,15 @@ export default function AgentPage() {
             />
           )}
 
-          {/* 4. Final Purchase Completed & Invoice Screen (Step 10) */}
+          {/* 4. Final Purchase Completed & Invoice Screen (Step 13) */}
           {stage === 'completed' && report && (
             <AgentCompletionCard
               report={report}
               receipt={receipt}
               record={record}
               onRunAnother={handleReset}
+              result={record?.result}
+              latency={record?.latency}
             />
           )}
 

@@ -25,8 +25,9 @@ export const AGENT_PIPELINE_STEPS: { id: string; stageKey: AgentStage; label: st
   { id: '8', stageKey: 'waiting_wallet_signature', label: 'Waiting For Wallet Signature', description: 'Awaiting Lute Wallet transaction signature approval...' },
   { id: '9', stageKey: 'payment_confirmed', label: 'Payment Confirmed', description: 'Settling AVM payment transaction on Algorand Testnet.' },
   { id: '10', stageKey: 'provider_executed', label: 'Provider Executed', description: 'Executing provider node endpoint & receiving output payload.' },
-  { id: '11', stageKey: 'receipt_generated', label: 'Receipt Generated', description: 'Issuing verifiable cryptographic receipt with SHA-256 hashes.' },
-  { id: '12', stageKey: 'invoice_generated', label: 'Invoice Generated', description: 'Itemized invoice generated and ready for PDF download.' },
+  { id: '11', stageKey: 'result_generated', label: 'Result Generated', description: 'Validating output schema and generating structured result view.' },
+  { id: '12', stageKey: 'receipt_generated', label: 'Receipt Generated', description: 'Issuing verifiable cryptographic receipt with SHA-256 hashes.' },
+  { id: '13', stageKey: 'invoice_generated', label: 'Invoice Generated', description: 'Itemized invoice generated and ready for PDF download.' },
 ];
 
 interface AgentTimelineProps {
@@ -64,7 +65,7 @@ export default function AgentTimeline({ currentStage, currentStepIndex, winnerNa
           {currentStepIndex >= 0 && currentStepIndex < AGENT_PIPELINE_STEPS.length
             ? `Step ${currentStepIndex + 1} of ${AGENT_PIPELINE_STEPS.length}`
             : currentStage === 'completed'
-            ? '12 of 12 Completed'
+            ? '13 of 13 Completed'
             : 'Idle'}
         </span>
       </div>

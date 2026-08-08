@@ -16,6 +16,8 @@ export interface AgentExecutionRecord {
   receiptId?: string;
   invoiceId?: string;
   totalCostUSD: number;
+  result?: any;
+  latency?: number;
 }
 
 const STORAGE_KEY = 'nexusapi_agent_execution_history';
@@ -35,7 +37,9 @@ export class ExecutionService {
     report: DecisionReport,
     txHash?: string,
     receiptId?: string,
-    invoiceId?: string
+    invoiceId?: string,
+    result?: any,
+    latency?: number
   ): AgentExecutionRecord {
     const history = this.getHistory();
     const winner = report.winner;
@@ -56,6 +60,8 @@ export class ExecutionService {
       receiptId: receiptId || `rcpt_${Date.now()}`,
       invoiceId: invoiceId || `inv_${Date.now()}`,
       totalCostUSD: winner ? parseFloat(winner.price.replace(/[^0-9.]/g, '')) || 0.05 : 0.05,
+      result,
+      latency,
     };
 
     const updated = [record, ...history].slice(0, 15);
