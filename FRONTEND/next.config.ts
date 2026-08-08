@@ -6,7 +6,7 @@ const nextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:4000/api/v1/:path*',
+        destination: 'https://code-rush2-0-arjuna-backend.vercel.app/api/v1/:path*',
       },
     ];
   },
