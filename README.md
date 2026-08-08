@@ -1,6 +1,6 @@
-# ⚡ NexusAPI: AgentMarket — Pay-per-Use AI & Data API Marketplace
+# CodeRush 2.0 | Team Project Repository
 
-### *The Future of Agentic Commerce powered by x402 Micropayments on Algorand*
+![NexusAPI Banner](./nexusapi_banner.png)
 
 [![Algorand TestNet Live](https://img.shields.io/badge/Algorand-TestNet%20Live-000000.svg?style=for-the-badge&logo=algorand)](https://algorand.co)
 [![Protocol HTTP 402](https://img.shields.io/badge/Protocol-x402%20HTTP-8A2BE2.svg?style=for-the-badge)](https://x402.org)
@@ -15,13 +15,14 @@
 - **Team Name**: Arjuna
 - **Project Title**: NexusAPI (AgentMarket — Pay-per-Use AI & Data API Marketplace)
 - **Track/Theme**: Agentic Commerce / AI Infrastructure / Web3 Payments
-- **Algorand Target Network**: `testnet`
-- **Wallet Support**: Lute Wallet (AVM testnet transactions signer)
+- **Target Network**: Algorand TestNet
+- **Wallet Support**: Lute Wallet (AVM TestNet transaction signer), Pera Wallet, Defly Wallet
 
 ---
 
-## 💡 The Problem (The "Why")
+## 💡 Project Description
 
+### The Problem
 In the emerging agentic economy, autonomous AI agents frequently require specialized micro-capabilities (such as OCR document extraction, multi-language translation, vector embeddings generation, location geocoding, risk scoring, or content moderation) to complete complex objectives. 
 
 However, existing API distribution channels (e.g. AWS Marketplace, Hugging Face, OpenRouter) are built for humans: they require pre-negotiated recurring subscription relationships, credit card checkouts, API key secrets management, and constant human oversight. 
@@ -32,21 +33,111 @@ However, existing API distribution channels (e.g. AWS Marketplace, Hugging Face,
 3. **Execute Pay-per-Request micro-billing** at the HTTP boundary, bound by local budgetary policies to prevent run-away costs.
 4. **Verifiably Audit** transactions after execution via cryptographic receipt hashes showing what was paid for, which provider was selected, and what result was returned.
 
----
-
-## 🚀 Project Description & Solution
-
+### The Solution: NexusAPI
 **NexusAPI** solves this by establishing an end-to-end, trustless ecosystem for agentic commerce. It bridges the gap between AI models and decentralized Web3 payments through the **x402 HTTP micropayments protocol** built on the **Algorand blockchain**. 
 
 Instead of manual human setup, a developer's agent is provided a prompt or task (e.g. *"Evaluate this transaction"* or *"Translate 'Hello World' into Hindi"*). The platform autonomously parses the prompt's intent, queries the provider registry, evaluates candidates against strict local spending caps, recommends the winning provider, initiates the on-chain AVM settlement payload via Lute Wallet signature, executes the sandboxed provider logic, and generates compliance invoice and receipt assets.
 
-Every purchase is secured by a robust local **Policy Engine** that restricts spending thresholds (per-request limits, daily caps, and allowlists) so that an autonomous agent can never drain wallets even when running without human supervision.
+---
+
+## 🛠️ Technical Stack
+
+| Domain | Technologies |
+| :--- | :--- |
+| **Frontend** | Next.js 15 (App Router), React 19, TypeScript (Strict Mode), Tailwind CSS v4, Framer Motion, Lucide Icons, Radix UI, Recharts, `@txnlab/use-wallet-react` |
+| **Backend** | Node.js, Express.js, TypeScript (`tsx`), Mongoose, JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `pdf-lib`, `qrcode` |
+| **Database** | MongoDB (Local Daemon or MongoDB Atlas Cloud Cluster) |
+| **AI Engine** | **DeepSeek V4 AI Model**: Prompt Intent Classification & Category/Target Extraction |
+| **Protocol & Web3** | **x402 Micropayments Protocol** (`@x402-avm`), **Algorand TestNet** (Algonode API), **Lute Wallet Connect** |
+
+---
+
+## ⚡ Setup and Installation
+
+Follow these step-by-step instructions to get the complete repository running on your local environment.
+
+### Prerequisites
+Before starting, ensure you have the following installed:
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+- **MongoDB**: Local MongoDB daemon running at `mongodb://127.0.0.1:27017` or a remote MongoDB Atlas URI.
+- **Lute Wallet Browser Extension**: Installed in Chrome/Brave, switched to **Algorand TestNet**, and funded via the [Algorand TestNet Dispenser](https://bank.testnet.algorand.network/).
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/patelmanan112/CodeRush2.0_arjuna.git
+cd CodeRush2.0_arjuna
+```
+
+### 2. Environment Configuration
+Create `.env` files in both `FRONTEND` and `BACKEND` directories (or use `.env.example` as a template).
+
+#### Backend Environment Variables (`BACKEND/.env`):
+```env
+PORT=4000
+MONGODB_URI=mongodb://127.0.0.1:27017/x402-marketplace
+JWT_SECRET=dev-secret-change-in-production
+JWT_EXPIRES_IN=7d
+CORS_ORIGIN=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+```
+
+#### Frontend Environment Variables (`FRONTEND/.env`):
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+NEXT_PUBLIC_HEALTH_URL=http://localhost:4000/health
+NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+NEXT_PUBLIC_ALGOD_SERVER=https://testnet-api.algonode.cloud
+NEXT_PUBLIC_ALGOD_PORT=443
+NEXT_PUBLIC_ALGOD_TOKEN=
+NEXT_PUBLIC_ALGORAND_NETWORK=testnet
+NEXT_PUBLIC_USDC_ASA_ID=10458941
+RESOURCE_PAY_TO=36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4
+```
+
+### 3. Install Project Dependencies
+Run the install command in both `FRONTEND` and `BACKEND`:
+```bash
+# Install Frontend Dependencies
+cd FRONTEND
+npm install
+
+# Install Backend Dependencies
+cd ../BACKEND
+npm install
+```
+
+### 4. Seed the Database
+Populate the database with 60 realistic microservice providers across 10 service categories:
+```bash
+cd BACKEND
+npm run seed
+```
+
+### 5. Run the Development Servers
+Start both backend and frontend servers in separate terminal windows:
+
+**Terminal 1 (Backend Server):**
+```bash
+cd BACKEND
+npm run dev
+# Server will run at http://localhost:4000
+```
+
+**Terminal 2 (Frontend Client):**
+```bash
+cd FRONTEND
+npm run dev
+# Web App will run at http://localhost:3000
+```
 
 ---
 
 ## ⚙️ Architecture & Core Solution Flow
 
-NexusAPI implements a strict 13-stage autonomous pipeline. The logic flow is structured as follows:
+NexusAPI implements an autonomous 13-stage execution pipeline that takes an agent's plain text prompt, classifies intent, scores providers, enforces local policy budgets, signs an Algorand AVM micropayment transaction, executes the microservice adapter, and emits cryptographic receipts.
 
 ```
                   ┌──────────────────────────────┐
@@ -55,22 +146,22 @@ NexusAPI implements a strict 13-stage autonomous pipeline. The logic flow is str
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │    DeepSeek Intent Parser    │
+                  │    DeepSeek Intent Parser    │  ◄── Classifies service category & parameters
                   └──────────────┬───────────────┘
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │  Marketplace Query & Search  │
+                  │  Marketplace Query & Search  │  ◄── Queries database provider registry
                   └──────────────┬───────────────┘
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │   Policy & Budget Check      │  ◄── Enforces per-request/daily caps
+                  │   Policy & Budget Check      │  ◄── Validates per-request cap & daily limits
                   └──────────────┬───────────────┘
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │  Weighted Decision Matrix    │  ◄── Ranks by cost, latency, quality
+                  │  Weighted Decision Matrix    │  ◄── Ranks candidates by cost, latency, quality
                   └──────────────┬───────────────┘
                                  │
                                  ▼
@@ -85,162 +176,161 @@ NexusAPI implements a strict 13-stage autonomous pipeline. The logic flow is str
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │    ResultViewer & Exports    │  ◄── Renders UI & exports Invoice/Receipt PDFs
+                  │    ResultViewer & Exports    │  ◄── Visualizes output & builds PDF Invoices
                   └──────────────────────────────┘
 ```
 
-### The 13 Execution Stages:
-1. **Understanding Request**: Extracts categories, query targets, and budget caps using DeepSeek intent models.
-2. **Searching Marketplace**: Resolves registered providers corresponding to target categories.
-3. **Comparing Providers**: Scores candidates based on pricing, latency, and SLA quality parameters.
-4. **Running Policy Engine**: Validates compliance with maximum spending caps.
-5. **Running Decision Engine**: Computes weighted scores and selects the optimal winner candidate.
-6. **Selecting Provider**: Commits provider logs and compiles payment session configurations.
-7. **Creating Payment Session**: Structures the cryptographic x402 payment requirements.
-8. **Waiting For Wallet Signature**: Prompts Lute Wallet extension to sign the Algorand TestNet transaction.
-9. **Payment Confirmed**: Settles payment on the Algorand ledger and waits for indexer indexing.
-10. **Provider Executed**: Directs inputs to the sandboxed execution adapter.
-11. **Result Generated**: Compiles raw outputs into the category-specific visual viewer.
-12. **Receipt Generated**: Produces a cryptographic, replay-safe receipt mapping SHA-256 hashes.
-13. **Invoice Generated**: Packages transactions into standard compliant compliance invoices.
+### The 13 Pipeline Execution Stages
+
+| Stage | Name | Description |
+| :--- | :--- | :--- |
+| **1** | **Understanding Request** | Parses prompt using DeepSeek AI to identify target category, parameters, and request limits. |
+| **2** | **Searching Marketplace** | Queries the database registry for active microservice providers matching the target category. |
+| **3** | **Comparing Providers** | Extracts provider SLAs including price per call, response latency, and quality score. |
+| **4** | **Running Policy Engine** | Verifies request against local daily wallet caps, single-request budgets, and provider allowlists. |
+| **5** | **Running Decision Engine** | Calculates weighted multi-attribute Utility Scores ($Score = w_1 \cdot Cost + w_2 \cdot Latency + w_3 \cdot Quality$). |
+| **6** | **Selecting Provider** | Chooses the top candidate provider and locks the payment payload parameters. |
+| **7** | **Creating Payment Session** | Constructs the x402 payment request header and nonces for Algorand AVM settlement. |
+| **8** | **Waiting For Signature** | Prompts Lute Wallet browser extension to sign the testnet ALGO micro-transaction. |
+| **9** | **Payment Confirmed** | Broadcasts transaction to Algorand TestNet and receives confirmation transaction ID. |
+| **10** | **Provider Executed** | Routes request payload into the category execution adapter sandbox. |
+| **11** | **Result Generated** | Transforms execution outputs into formatted visual components via `<ResultViewer />`. |
+| **12** | **Receipt Generated** | Computes SHA-256 cryptographic receipt hash linking request, payment ID, and response payload. |
+| **13** | **Invoice Generated** | Builds downloadable compliance PDF invoices and receipts client-side. |
 
 ---
 
-## 🛠️ Core Capabilities & Technology Stack
+## 🧩 Supported Microservice Categories
 
-### Frontend & UI
-- **Next.js 15** (App Router, Strict TypeScript Mode)
-- **Tailwind CSS** (Utility styles) & **Vanilla CSS** (Custom glassmorphic microservice overlays)
-- **shadcn/ui** (Radix-based interface elements)
-- **Framer Motion** (Subtle, premium physics-based animations for the timeline)
-- **Lucide React** (Consistent modern iconography)
+NexusAPI supports **10 distinct service categories**, each with dedicated mock execution adapters, data schemas, and interactive visual result renderers:
 
-### Autonomous Logic & Middleware
-- **DeepSeek V4 AI Intent Parser**: Parses raw prompts into structured classifications.
-- **x402 Protocol Client**: Handles HTTP 402 handshake verification, nonces, and replay protection.
-- **Policy & Decision Engine**: Evaluates allowlists, tracks accumulated daily balances, and ranks candidates using dynamic parameters.
-- **PDF Export Center**: Generates compliance-ready PDF downloads for receipts, invoices, and audit reports client-side.
-- **Provider Sandbox Adapters**: Category-specific simulated execution adapters returned via a custom `<ResultViewer />`:
-  - *OCR*: Formatted invoice scans and text extraction.
-  - *Translation*: Multi-lingual grid supporting English, Hindi, French, Spanish, German, and Japanese.
-  - *Embeddings*: High-dimensional vector array listings.
-  - *Text Generation*: Clean LLM prose layouts.
-  - *Speech-to-Text*: Simulated audio waveforms and text transcription.
-  - *Image Generation*: Completed abstract photo render previews.
-  - *Moderation*: Flagged safety parameter grid.
-  - *Risk Scoring*: Risk meter indicating LOW/MEDIUM/HIGH scores and threat factors.
-  - *Geocoding*: Mapping query locations to coordinates (Latitude & Longitude).
-  - *Sentiment*: Gauge layout showing emotional index values.
-
-### Web3 Blockchain & Payments
-- **Algorand TestNet**: Distributed ledger target for sub-second, cheap micropayments.
-- **Lute Wallet Connect**: Web3 wallet connector interface (`@txnlab/use-wallet-react`) enabling testnet address association and transaction signature verification.
+1. 📄 **OCR (Optical Character Recognition)**: Document scanning, text extraction, key-value table extraction.
+2. 🌐 **Translation**: Multi-lingual translations supporting English, Hindi, French, Spanish, German, Japanese.
+3. 🔢 **Vector Embeddings**: High-dimensional semantic vector floating-point array generation.
+4. ✍️ **Text Generation**: Context-aware LLM text completion & summary generation.
+5. 🎙️ **Speech-to-Text**: Audio transcription, timestamping, confidence scoring, and waveform preview.
+6. 🎨 **Image Generation**: Synthetic prompt-based image creation and visual preview render.
+7. 🛡️ **Content Moderation**: Safety classification scoring across toxic, violent, adult, or spam vectors.
+8. 📊 **Risk Scoring**: Threat factor detection returning composite LOW, MEDIUM, or HIGH risk indices.
+9. 📍 **Geocoding**: Converting addresses into exact latitude, longitude, and elevation coordinates.
+10. 😊 **Sentiment Analysis**: Emotional index evaluation returning positive, negative, and neutral metrics.
 
 ---
 
-## 📂 Folder Structure
+## 📂 Detailed Folder Structure
 
 ```
-FRONTEND/
-├── public/                 # Static assets
-└── src/
-    ├── app/                # Next.js App Router Page components
-    │   ├── agent/          # Autonomous Agent Interface (Timeline & Checklist)
-    │   ├── dashboard/      # Developer Portal (API Key, Budgets, Ledger history)
-    │   ├── marketplace/    # Browsing catalog & comparisons
-    │   ├── provenance/     # Cryptographic audit logs trace viewer
-    │   └── login/          # Google Sign-In with offline resilient local fallback
-    ├── components/         # Reusable layouts
-    │   ├── agent/          # Timeline, Completion card, & ResultViewer
-    │   ├── Navbar.tsx      # Lute Wallet & Testnet balance querying navbar
-    │   └── ModeSelector.tsx# Toggle between manual purchase & autonomous AI mode
-    ├── context/            # Shared React state managers
-    │   ├── AuthContext.tsx # User session cache
-    │   ├── PaymentContext.tsx# Enforces spending budgets, tracks receipts, and traces
-    │   └── AgentContext.tsx# Tracks execution pipeline stages
-    ├── hooks/              # Query hooks
-    │   └── useAlgorandBalance.ts # Queries live TestNet ALGO/USDC ledger balances
-    ├── lib/
-    │   ├── data/           # Seeder records
-    │   ├── x402/           # x402 Client schemas, signatures, & types
-    │   └── providers/      # Final Simulated Provider Execution adapters
-    │       ├── adapters/   # 10 Category adapters (ocr, translation, etc.)
-    │       └── ProviderExecutionService.ts # Orchestrator mapping category keys
-    └── services/
-        ├── agent/          # DeepSeek model hooks & matrix rankings
-        └── pdf/            # jsPDF client template compilation
-BACKEND/
-├── src/
-    ├── controllers/        # Provider CRUD handlers
-    ├── models/             # Mongoose schemas with 10 extended categories
-    └── services/           # DB Seeder progressive-injection service
+CodeRush2.0_arjuna/
+├── README.md                      # Primary project documentation
+├── nexusapi_banner.png            # Visual architecture banner graphic
+├── .env.example                   # Master environment variables template
+├── FRONTEND/                      # Next.js 15 Web Application
+│   ├── public/                    # Static images, icons, and assets
+│   └── src/
+│       ├── app/                   # App Router Pages
+│       │   ├── agent/             # Autonomous Agent Pipeline Execution & Timeline
+│       │   ├── agent-advisor/     # AI Interactive Agent Recommendation Tool
+│       │   ├── become-provider/   # Provider Registration Portal
+│       │   ├── compare/           # Provider SLA Comparison Matrix
+│       │   ├── dashboard/         # Developer Portal (API Key, Budget Caps, Usage Graphs)
+│       │   ├── login/             # Auth Login Page with Google OAuth & Offline Fallback
+│       │   ├── marketplace/       # Catalog Browsing & Provider Details
+│       │   ├── payment/           # x402 Micropayment Checkout Flow
+│       │   ├── provenance/        # Cryptographic Audit Log & Verification Trace
+│       │   ├── providers/         # Provider Directory & Category Filtering
+│       │   └── trace/             # Step-by-step Execution Visualizer
+│       ├── components/            # UI Components
+│       │   ├── agent/             # Timeline, Completion Card, & ResultViewer
+│       │   ├── Navbar.tsx         # Navigation Bar & Lute Wallet Balances
+│       │   └── ModeSelector.tsx   # Manual Purchase vs Autonomous AI Mode Toggle
+│       ├── context/               # React State Management
+│       │   ├── AuthContext.tsx    # User Login & JWT Session State
+│       │   ├── PaymentContext.tsx # Spend Policies, Budget Caps, Audit Receipts
+│       │   └── AgentContext.tsx   # 13 Execution Pipeline State Machine
+│       ├── hooks/                 # Custom React Hooks
+│       │   └── useAlgorandBalance.ts # Live Algorand TestNet ALGO/USDC Balance Poller
+│       ├── lib/                   # Libraries & Services
+│       │   ├── data/              # Static Mock Data Seeds
+│       │   ├── x402/              # x402 Client Handshake & Signature Parsers
+│       │   └── providers/         # Category Sandboxed Execution Adapters
+│       │       ├── adapters/      # 10 Execution Adapters (OCR, Translation, etc.)
+│       │       └── ProviderExecutionService.ts # Category Dispatch Orchestrator
+│       └── services/              # External Integrations
+│           ├── agent/             # DeepSeek V4 Model Client & Ranking Engine
+│           └── pdf/               # PDF Invoice & Receipt Generation Service
+└── BACKEND/                       # Node.js + Express REST API Server
+    └── src/
+        ├── app.ts                 # Express Middleware Setup
+        ├── server.ts              # HTTP Server Entry Point
+        ├── controllers/           # REST API Route Controllers
+        ├── models/                # Mongoose Database Models (Provider, Transaction, Policy)
+        ├── routes/                # Express Route Modules
+        └── services/              # Database Seeder & Business Logic Services
 ```
 
 ---
 
-## ⚡ Setup and Installation
+## 🔌 API Endpoints Reference
 
-### Prerequisites
-- **Node.js 18+** and **npm**
-- **Lute Wallet Browser Extension** (Configured to **TestNet** & funded via the [Algorand TestNet Dispenser](https://bank.testnet.algorand.network/))
+The Backend Express API exposes the following RESTful endpoints:
 
-### 1. Clone & Enter Directory
-```bash
-git clone https://github.com/patelmanan112/CodeRush2.0_arjuna.git
-cd CodeRush2.0_arjuna
-```
+### Health & Auth
+- `GET /health` - Server health check & status
+- `POST /api/v1/auth/login` - User authentication / JWT token generation
+- `GET /api/v1/auth/me` - Fetch currently authenticated profile
 
-### 2. Install Project Dependencies
-Run in the root folder (or inside both `FRONTEND` and `BACKEND` directory):
-```bash
-# Frontend
-cd FRONTEND
-npm install
+### Providers & Marketplace
+- `GET /api/v1/providers` - List all providers (supports `category`, `search`, `minRating` filters)
+- `GET /api/v1/providers/:id` - Get specific provider details by ID
+- `POST /api/v1/providers` - Register a new provider microservice
 
-# Backend
-cd ../BACKEND
-npm install
-```
+### Policies & Spend Control
+- `GET /api/v1/policies` - Retrieve user budget policy limits (max price, daily limit, allowlists)
+- `PUT /api/v1/policies` - Update user budget policy limits
 
-### 3. Environment Variables Configuration
-Configure a `.env` file in `FRONTEND`:
-```env
-NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key
-RESOURCE_PAY_TO=36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4
-```
-
-Configure a `.env` file in `BACKEND`:
-```env
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-```
-
-### 4. Running the Development Servers
-Start both servers concurrently:
-```bash
-# Start Backend (from BACKEND directory)
-npm run dev
-
-# Start Frontend (from FRONTEND directory)
-npm run dev
-```
-The client app will be running at `http://localhost:3000`.
+### Payments & x402 Protocol
+- `POST /api/v1/payments/verify` - Verify an x402 Algorand payment receipt signature
+- `GET /api/v1/transactions` - Fetch transaction history logs
+- `GET /api/v1/receipts/:id` - Fetch cryptographic transaction receipt details
 
 ---
 
 ## 🔒 Security & Adversarial Resistance
-- **Structured Data Validation**: The policy engine and decision scoring models evaluate strictly typed schema values (price numbers, quality ranges, category strings), shielding the client from adversarial prompt injections hidden within free-text provider descriptions.
-- **Double-Spend Protection**: The x402 Client enforces strict nonce tracking; replayed payment signatures are verified and rejected at the facilitator layer.
-- **Granular Spend Budgets**: Local policies assert strict budget boundaries (per-request caps, daily wallet limits) to restrict autonomous agent leakage.
+
+1. **Structured Data Validation**: All provider listings and model outputs are validated against strict Zod and TypeScript schemas, eliminating prompt injection vulnerabilities inside free-text descriptions.
+2. **Replay & Double-Spend Protection**: The x402 Protocol Client uses single-use nonces tied to Algorand transaction hashes to ensure signed payment claims cannot be replayed.
+3. **Granular Local Budget Policies**: The local Policy Engine enforces strict upper spending limits (per-request caps, daily wallet allowances) before any transaction prompt is sent to Lute Wallet, preventing rogue AI agent drainage.
 
 ---
 
-## 🗺️ Roadmap & Completed Tasks
-- [x] **Large Provider Database**: Extended seeding configurations to populate 60 realistic providers across 10 categories.
-- [x] **Robust Authentication Fallback**: Resolved Google Authentication redirect issues, creating a resilient JWT decoder client-side if authentication servers are offline.
-- [x] **On-Chain Balance Inquiries**: Linked the indexer hook to monitor live ALGO and USDC holdings directly from Algorand TestNet.
-- [x] **Simulated Provider Execution adapters**: Implemented the final task execution layer and the custom `ResultViewer` formatting engine.
-- [x] **Compliance Exports**: Fully implemented client-side PDF compilers for compliance receipts and invoices.
-- [x] **13-stage Timeline**: Unified the pipeline execution stages into an animated trace viewer.
-- [ ] **Next Steps**: Persistent database migrations for agent audit traces.
-- [ ] **Next Steps**: MCP server integrations exposing the API recommendation engine as an agent-callable tool.
+## ❓ Troubleshooting Guide
+
+| Issue | Cause | Solution |
+| :--- | :--- | :--- |
+| **Lute Wallet fails to connect** | Wallet extension not installed or set to MainNet. | Install Lute Wallet extension, switch network mode to **TestNet**, and refresh the page. |
+| **Insufficient Funds Error** | Algorand TestNet account has 0 ALGO. | Copy your public address from Lute Wallet and paste it into the [Algorand TestNet Dispenser](https://bank.testnet.algorand.network/) to receive free test tokens. |
+| **MongoDB Connection Failed** | Local daemon is stopped or URI incorrect. | Start MongoDB using `mongod` or check `MONGODB_URI` in `BACKEND/.env`. |
+| **DeepSeek API Key Error** | Missing or invalid DeepSeek API Key. | Add `NEXT_PUBLIC_DEEPSEEK_API_KEY` in `FRONTEND/.env` or test using local fallback mock parser mode. |
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License & Acknowledgements
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+Special thanks to:
+- **Algorand Foundation** for high-performance blockchain infrastructure.
+- **x402 Protocol Community** for web-standard HTTP 402 payment specifications.
+- **DeepSeek AI** for high-speed agentic intent parsing models.
