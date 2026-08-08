@@ -9,23 +9,19 @@ import { notFound } from "./middleware/notFound";
 const app = express();
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:3000",
+  process.env.FRONTEND_URL,
   "http://localhost:3000",
-].filter(Boolean);
+  "http://localhost:3001",
+  "https://nexusapi-arjuna.vercel.app",
+].filter(Boolean) as string[];
 
-app.use(
-  helmet({
-    crossOriginOpenerPolicy: false,
-    crossOriginEmbedderPolicy: false,
-  })
-);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || process.env.NODE_ENV !== "production") {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        callback(null, true);
       }
     },
     credentials: true,

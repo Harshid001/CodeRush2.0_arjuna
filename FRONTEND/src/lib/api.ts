@@ -181,7 +181,9 @@ export async function recordBackendPayment(payload: {
   payerKeyId: string;
   signature: string;
 }): Promise<any | null> {
+  console.log("[PAYMENT RECORD] START");
   try {
+    console.log("[PAYMENT RECORD] REQUEST SENT");
     const res = await fetch(`${API_BASE_URL}/payments`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -191,11 +193,16 @@ export async function recordBackendPayment(payload: {
       }),
     });
 
+    console.log("[PAYMENT RECORD] RESPONSE STATUS:", res.status);
+    const cloned = res.clone();
+    const bodyText = await cloned.text();
+    console.log("[PAYMENT RECORD] RESPONSE BODY:", bodyText);
+
     if (!res.ok) return null;
-    const json = await res.json();
+    const json = JSON.parse(bodyText);
     return json.success ? json.data : null;
   } catch (err) {
-    console.warn("[api] Error recording payment in backend:", err);
+    console.warn("[PAYMENT RECORD] ERROR:", err);
     return null;
   }
 }

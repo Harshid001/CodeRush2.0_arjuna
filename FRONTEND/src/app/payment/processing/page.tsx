@@ -50,11 +50,26 @@ function PaymentProcessingInner() {
     const executePaymentFlow = useCallback(async () => {
         const currentProvider = apiToProvider(api);
 
+        console.log("[X402 DEBUG] HOP 1 wallet", {
+            connected: !!activeAccount,
+            walletAddress: activeAccount?.address || null,
+            network: ALGORAND_TESTNET_CAIP2,
+            chain: "Algorand TestNet",
+            hasSigner: typeof signTransactions === "function",
+        });
+
         const defaultPayloads: Record<string, unknown> = {
             "p-llama3-sentiment": { prompt: "Analyze financial sentiment for Algorand ecosystem." },
             "p-vision-inspector": { imageUrl: "https://example.com/chart.png", prompt: "Extract labels" },
         };
         const parsedInput = defaultPayloads[currentProvider.id] || { prompt: `Inference request for ${currentProvider.name}` };
+
+        console.log("[X402 DEBUG] HOP 2 request", {
+            URL: currentProvider.endpoint,
+            method: "POST",
+            providerId: currentProvider.id,
+            price: currentProvider.price,
+        });
 
         try {
             const response = await requestPaidResource(

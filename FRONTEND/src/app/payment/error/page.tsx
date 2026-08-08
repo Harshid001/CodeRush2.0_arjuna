@@ -14,7 +14,26 @@ function PaymentErrorInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const errorMessage = searchParams.get('error') || 'The transaction was declined by the facilitator.';
+    const sanitizeDisplayError = (value: string | null) => {
+        const fallback = 'The transaction was declined by the facilitator.';
+        if (!value || value.trim() === '' || value.trim() === '{}' || value.trim() === '[]') {
+            return fallback;
+        }
+        const trimmed = value.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message.trim();
+                if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error.trim();
+                if (typeof parsed?.details === 'string' && parsed.details.trim()) return parsed.details.trim();
+            } catch {
+                // fall through to the raw value
+            }
+        }
+        return trimmed;
+    };
+
+    const errorMessage = sanitizeDisplayError(searchParams.get('error'));
     const providerId = searchParams.get('providerId') || '';
 
     return (

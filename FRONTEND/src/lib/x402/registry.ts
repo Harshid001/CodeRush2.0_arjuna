@@ -34,6 +34,7 @@ class ProviderRegistry {
 
   private initRegistry() {
     const endpointsSeen = new Set<string>();
+    const fallbackPayTo = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
 
     for (const entry of seedData.providers) {
       const cleanEndpoint = entry.endpoint.toLowerCase().replace(/\/$/, "");
@@ -47,10 +48,11 @@ class ProviderRegistry {
       }
       endpointsSeen.add(cleanEndpoint);
 
-      // Rule 1: Warn on unconfigured placeholder payTo addresses at load time
-      if (entry.payTo.startsWith("REPLACE_WITH_")) {
+      // Rule 1: Only warn when the provider is still using a placeholder and no demo fallback is configured.
+      if (entry.payTo.startsWith("REPLACE_WITH_") && fallbackPayTo.startsWith("REPLACE_WITH_")) {
         console.warn(
-          `[ProviderRegistry WARN] Provider '${entry.providerId}' has an unconfigured placeholder payTo address: '${entry.payTo}'. It is marked inactive for live payouts.`
+          `[ProviderRegistry WARN] Provider '${entry.providerId}' has an unconfigured placeholder payTo address: '${entry.payTo}'.` +
+            ` The app is falling back to the default demo payTo: '${fallbackPayTo}'.`
         );
       }
 
@@ -113,12 +115,10 @@ class ProviderRegistry {
 
 export const registry = new ProviderRegistry();
 
-export function getProvider(idOrSlug: string): Provider {
+export function getProvider(idOrSlug: string): Provider | null {
   const entry = registry.getProviderEntry(idOrSlug);
   if (!entry) {
-    // Fallback to live demo provider if unknown slug is passed
-    const liveEntry = registry.getLiveDemoProvider();
-    return registry.toProviderObject(liveEntry);
+    return null;
   }
   return registry.toProviderObject(entry);
 }

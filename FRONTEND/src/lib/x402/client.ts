@@ -1,6 +1,7 @@
 import { wrapFetchWithPayment, x402Client } from "@x402-avm/fetch";
 import { toClientAvmSigner, ClientAvmSigner } from "@x402-avm/avm";
 import { registerExactAvmScheme } from "@x402-avm/avm/exact/client";
+import algosdk from "algosdk";
 import {
   Provider,
   PolicyLimits,
@@ -68,6 +69,36 @@ export function createPaidFetch(activeAccount: any, signTransactions: any, onPay
     signer = {
       address: activeAccount.address,
       signTransactions: async (txns: Uint8Array[], indexesToSign?: number[]) => {
+        const decodedDetails = txns.map((tBytes, i) => {
+          try {
+            const decoded = algosdk.decodeUnsignedTransaction(tBytes) as any;
+            const senderAddr = decoded.sender ? algosdk.encodeAddress(decoded.sender.publicKey) : (decoded.from ? algosdk.encodeAddress(decoded.from.publicKey) : "unknown");
+            const receiverAddr = decoded.payment?.receiver ? algosdk.encodeAddress(decoded.payment.receiver.publicKey) : (decoded.assetTransfer?.receiver ? algosdk.encodeAddress(decoded.assetTransfer.receiver.publicKey) : undefined);
+            
+            return {
+              index: i,
+              type: decoded.type,
+              sender: senderAddr,
+              receiver: receiverAddr,
+              asset: decoded.assetTransfer?.assetIndex ? String(decoded.assetTransfer.assetIndex) : undefined,
+              amount: decoded.payment?.amount ? String(decoded.payment.amount) : (decoded.assetTransfer?.amount ? String(decoded.assetTransfer.amount) : "0"),
+              fee: String(decoded.fee),
+              rekey: decoded.rekeyTo ? algosdk.encodeAddress(decoded.rekeyTo.publicKey) : undefined,
+              group: decoded.group ? Buffer.from(decoded.group).toString("hex") : undefined,
+            };
+          } catch (e) {
+            return { index: i, error: "Failed to decode transaction bytes" };
+          }
+        });
+
+        console.log("[X402 LUTE REQUEST]", {
+          transactionCount: txns.length,
+          indexesToSign: indexesToSign || [1],
+          network: "Algorand TestNet (algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=)",
+          walletAddress: activeAccount?.address || null,
+          transactions: decodedDetails,
+        });
+
         // Stage 2: signature_requested (client-reported)
         await reportClientEvent(
           "signature_requested",
@@ -81,7 +112,22 @@ export function createPaidFetch(activeAccount: any, signTransactions: any, onPay
         );
 
         try {
+          console.log("[X402 LUTE RESULT]", {
+            signingStarted: true,
+            signingCompleted: false,
+            signingError: null,
+            signedTransactionReturned: false,
+          });
+
           const signedResults = await signTransactions(txns, indexesToSign);
+
+          console.log("[X402 LUTE RESULT]", {
+            signingStarted: true,
+            signingCompleted: true,
+            signingError: null,
+            signedTransactionReturned: !!(signedResults && signedResults.length > 0),
+            signedTransactionCount: signedResults ? signedResults.length : 0,
+          });
 
           // Stage 3: signature_received (client-reported, address masked)
           await reportClientEvent(
@@ -96,28 +142,127 @@ export function createPaidFetch(activeAccount: any, signTransactions: any, onPay
 
           return signedResults;
         } catch (err: any) {
+          const isUserRejection = err?.code === 4100 || String(err?.message || "").includes("User Rejected Request");
+          const formattedErrMessage = isUserRejection
+            ? "Transaction signing was rejected in Lute Wallet."
+            : (err?.message || "User rejected signature in Lute Wallet");
+
+          console.error("[X402 LUTE RESULT]", {
+            signingStarted: true,
+            signingCompleted: false,
+            signingError: err?.message || String(err),
+            signedTransactionReturned: false,
+          });
+
           await reportClientEvent(
             "final_state",
             "Lute Wallet Signing Rejected",
-            err?.message || "User rejected signature in Lute Wallet",
-            { status: "failed", error: err?.message }
+            formattedErrMessage,
+            { status: "failed", error: err?.message, code: err?.code }
           );
-          throw err;
+          throw new Error(formattedErrMessage);
         }
       },
     };
   }
 
+  let fetchCount = 0;
+
   const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const customInit = { ...init };
-    const headers = new Headers(customInit.headers || {});
+    fetchCount++;
+    const fetchLabel = `[X402 FETCH ${fetchCount}]`;
+
+    const isReqObj = typeof Request !== "undefined" && input instanceof Request;
+    let reqUrl: string;
+    let reqMethod: string;
+    let reqHeaders: Headers;
+
+    if (isReqObj) {
+      const reqInput = input as Request;
+      reqUrl = reqInput.url;
+      reqMethod = init?.method || reqInput.method || "POST";
+      reqHeaders = new Headers(reqInput.headers);
+      if (init?.headers) {
+        new Headers(init.headers).forEach((val, key) => reqHeaders.set(key, val));
+      }
+    } else {
+      reqUrl = String(input);
+      reqMethod = init?.method || "POST";
+      reqHeaders = new Headers(init?.headers);
+    }
 
     if (currentPaymentId) {
-      headers.set("x-payment-id", currentPaymentId);
+      reqHeaders.set("x-payment-id", currentPaymentId);
     }
-    customInit.headers = headers;
 
-    const response = await fetch(input, customInit);
+    const authHeaderName = ["authorization", "payment-signature", "x-payment"].find((h) => reqHeaders.has(h));
+    const hasAuthHeader = !!authHeaderName;
+    const headerVal = hasAuthHeader ? (reqHeaders.get(authHeaderName!) || "") : "";
+
+    console.error("[X402 CUSTOM FETCH INPUT]", {
+      inputType: isReqObj ? "Request" : typeof input,
+      isRequest: isReqObj,
+      url: reqUrl,
+      method: reqMethod,
+      hasAuthorizationHeader: hasAuthHeader,
+    });
+
+    console.error(`${fetchLabel} REQUEST: ${reqMethod} ${reqUrl} (hasAuthHeader: ${hasAuthHeader}, authorizationLength: ${headerVal.length})`);
+
+    if (hasAuthHeader) {
+      console.error("[X402 AUTHORIZATION CREATED]", {
+        authorizationExists: true,
+        authorizationLength: headerVal.length,
+        headerName: authHeaderName,
+      });
+
+      console.error("[X402 PAYMENT SUBMISSION]", {
+        walletAddress: activeAccount?.address || null,
+        network: "Algorand TestNet (algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=)",
+        asset: "10458941",
+        amount: "10000",
+        payTo: "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4",
+        feePayer: "ZMFK2OI7ZBD2U27ISERZC4S6LKM6WMFJPZQ4MYNJDZ2VNBNMBA67RA22AA",
+        paymentPayloadCreated: true,
+        signedTransactionReceived: true,
+        signedTransactionCount: 2,
+        paymentHeaderCreated: true,
+        paymentHeaderName: authHeaderName,
+        paymentHeaderLength: headerVal.length,
+      });
+
+      console.error("[X402 PAID REQUEST]", {
+        method: reqMethod,
+        url: reqUrl,
+        paymentHeaderPresent: true,
+        paymentHeaderLength: headerVal.length,
+      });
+    }
+
+    const finalInit: RequestInit = {
+      ...init,
+      method: reqMethod,
+      headers: reqHeaders,
+    };
+
+    const response = isReqObj
+      ? await fetch(reqUrl, finalInit)
+      : await fetch(input, finalInit);
+
+    console.error(`${fetchLabel} RESPONSE STATUS:`, response.status, response.statusText);
+
+    // Capture raw body text immediately on non-OK responses before any consumer drains the stream
+    if (!response.ok) {
+      try {
+        const cloned = response.clone();
+        const bodyText = await cloned.text();
+        (response as any)._rawErrorText = bodyText;
+        console.error(`${fetchLabel} NON-OK BODY:`, bodyText);
+        console.error(`${fetchLabel} NON-OK BODY LENGTH:`, bodyText.length);
+      } catch (err) {
+        console.error(`${fetchLabel} COULD NOT CLONE NON-OK RESPONSE BODY:`, String(err));
+      }
+    }
 
     // Extract paymentId from HTTP 402 challenge header
     const pid = response.headers.get("x-payment-id") || response.headers.get("X-PAYMENT-ID");
@@ -126,6 +271,35 @@ export function createPaidFetch(activeAccount: any, signTransactions: any, onPay
       if (onPaymentIdAssigned) {
         onPaymentIdAssigned(pid);
       }
+    }
+
+    if (response.status === 402) {
+      const prHeader =
+        response.headers.get("PAYMENT-REQUIRED") ||
+        response.headers.get("payment-required") ||
+        response.headers.get("X-PAYMENT-REQUIRED") ||
+        response.headers.get("x-payment-required");
+
+      console.error("[X402 DEBUG] HOP 3 challenge", {
+        status: 402,
+        challengeExists: !!prHeader,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+      });
+
+      if (prHeader) {
+        try {
+          const decoded = typeof atob === "function" ? atob(prHeader) : Buffer.from(prHeader, "base64").toString("utf-8");
+          const parsed = JSON.parse(decoded);
+          console.error("[X402 DEBUG] HOP 4 parsed challenge", {
+            x402Version: parsed.x402Version,
+            accepts: parsed.accepts,
+          });
+        } catch (e) {
+          console.warn("[X402 DEBUG] Could not parse PAYMENT-REQUIRED challenge header:", e);
+        }
+      }
+    } else if (hasAuthHeader) {
+      console.error("[X402 DEBUG] HOP 7 settlement response status:", response.status);
     }
 
     return response;
@@ -239,27 +413,36 @@ export async function requestPaidResource(
   );
 
   try {
-    let fetchFn = fetch;
+    if (!options.activeAccount || typeof options.signTransactions !== "function") {
+      const errorMsg = "Wallet not connected for x402 payment. Connect your Lute wallet on Algorand TestNet and retry the payment.";
+      console.error("[x402 Client] Missing wallet signer before payment request:", {
+        hasActiveAccount: !!options.activeAccount,
+        hasSignTransactions: typeof options.signTransactions === "function",
+      });
 
-    if (options.activeAccount && options.signTransactions) {
-      fetchFn = createPaidFetch(options.activeAccount, options.signTransactions, options.onPaymentIdAssigned);
       traceBuilder.addStep(
         "PAYLOAD_SIGNING",
-        "Lute Wallet AVM Signer Configured",
-        "Wired ClientAvmSigner & ExactAvmScheme with connected Algorand account.",
-        { activeAccountAddress: options.activeAccount?.address },
-        "success"
+        "Wallet Not Ready",
+        errorMsg,
+        {
+          hasActiveAccount: !!options.activeAccount,
+          hasSignTransactions: typeof options.signTransactions === "function",
+        },
+        "error"
       );
-    } else {
-      console.warn("[x402 Client] [HOP 1] WARNING: Wallet signer not connected! Sending raw unauthenticated fetch.");
-      traceBuilder.addStep(
-        "PAYLOAD_SIGNING",
-        "Standard HTTP Fetch (Wallet Not Connected)",
-        "Wallet signer not connected; sending standard HTTP request.",
-        {},
-        "warning"
-      );
+
+      const trace = traceBuilder.fail(errorMsg);
+      return { error: errorMsg, trace };
     }
+
+    let fetchFn = createPaidFetch(options.activeAccount, options.signTransactions, options.onPaymentIdAssigned);
+    traceBuilder.addStep(
+      "PAYLOAD_SIGNING",
+      "Lute Wallet AVM Signer Configured",
+      "Wired ClientAvmSigner & ExactAvmScheme with connected Algorand account.",
+      { activeAccountAddress: options.activeAccount?.address },
+      "success"
+    );
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -314,24 +497,44 @@ export async function requestPaidResource(
     });
 
     if (!response.ok) {
-      let errorText = `HTTP Error ${response.status}: ${response.statusText}`;
-      let rawJson: any = null;
-      try {
-        rawJson = await response.clone().json();
-        errorText = rawJson.error || rawJson.message || rawJson.details || JSON.stringify(rawJson);
-      } catch (e) {
+      console.error("========== X402 RAW ERROR ==========");
+      console.error("STATUS:", response.status);
+      console.error("STATUS TEXT:", response.statusText);
+
+      let rawBody = (response as any)._rawErrorText || "";
+      if (!rawBody) {
         try {
-          const rawText = await response.clone().text();
-          if (rawText) errorText = rawText;
-        } catch (e2) {}
+          const cloned = response.clone();
+          rawBody = await cloned.text();
+        } catch (e: any) {
+          console.error("RAW BODY READ ERROR:", String(e));
+        }
       }
 
-      console.error("[x402 Client] [HOP 3] Server returned non-ok error status:", {
-        status: response.status,
-        statusText: response.statusText,
-        errorText,
-        rawJson,
-      });
+      console.error("RAW BODY:", rawBody);
+      console.error("RAW BODY LENGTH:", rawBody ? rawBody.length : 0);
+
+      try {
+        const headerEntries = Array.from(response.headers.entries())
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n");
+        console.error("RAW HEADERS:\n" + headerEntries);
+      } catch (e) {
+        console.error("HEADER READ ERROR:", String(e));
+      }
+      console.error("===================================");
+
+      let errorText = rawBody;
+      if (rawBody && rawBody.trim()) {
+        try {
+          const errorJson = JSON.parse(rawBody);
+          errorText = errorJson.message || errorJson.error || errorJson.details || JSON.stringify(errorJson);
+        } catch {
+          errorText = rawBody.length > 500 ? `${rawBody.slice(0, 500)}...` : rawBody;
+        }
+      } else {
+        errorText = `HTTP Error ${response.status}${response.statusText ? `: ${response.statusText}` : ""}`;
+      }
 
       const finalErrorMsg = typeof errorText === 'string' ? errorText : JSON.stringify(errorText);
 
@@ -339,7 +542,7 @@ export async function requestPaidResource(
         "PROVIDER_EXECUTION",
         "Provider API Request Returned Error Status",
         finalErrorMsg,
-        { status: response.status, details: rawJson },
+        { status: response.status, details: errorText, rawBody },
         "error"
       );
       const trace = traceBuilder.fail(finalErrorMsg);

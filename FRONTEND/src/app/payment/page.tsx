@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Shield, Wallet, Globe, Lock, Cpu, Star, Clock, AlertCircle, Award, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
@@ -32,7 +32,13 @@ function PaymentCheckoutInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { activeAddress: connectedAddress } = useWallet();
-    const isConnected = !!connectedAddress;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isConnected = mounted && !!connectedAddress;
 
     const providerId = searchParams.get('providerId');
     const api = apis.find(a => a.id === providerId) || apis[0];
@@ -44,7 +50,7 @@ function PaymentCheckoutInner() {
     const platformFee = 0.00; // Free
     const totalCost = apiPrice + gasUsd + platformFee;
 
-    const displayAddress = connectedAddress || "GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74";
+    const displayAddress = mounted && connectedAddress ? connectedAddress : "GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74";
 
     const handleProceedToPayment = () => {
         router.push(`/payment/processing?providerId=${api.id}`);
