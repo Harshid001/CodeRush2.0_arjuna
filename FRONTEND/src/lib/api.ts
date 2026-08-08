@@ -18,7 +18,7 @@ export async function checkBackendHealth(): Promise<{ running: boolean; message?
     const res = await fetch(HEALTH_URL, { cache: "no-store" });
     if (!res.ok) return { running: false };
     const data = await res.json();
-    return { running: true, message: data.message };
+    return { running: data.running ?? true, message: data.message };
   } catch {
     return { running: false };
   }

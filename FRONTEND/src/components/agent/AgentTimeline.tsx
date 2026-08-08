@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Loader2, AlertCircle, Circle, KeyRound, Zap } from 'lucide-react';
 import type { AgentStage } from '@/context/AgentContext';
@@ -36,25 +36,10 @@ interface AgentTimelineProps {
   winnerName?: string;
   winnerPrice?: string;
   onBypassSignature?: () => void;
+  onConfirmSignature?: () => void;
 }
 
-export default function AgentTimeline({ currentStage, currentStepIndex, winnerName, winnerPrice, onBypassSignature }: AgentTimelineProps) {
-  // Auto-trigger Lute signing popup when the wallet signature step becomes active.
-  // We wait 1500ms to give the x402 flow time to build the transaction first.
-  useEffect(() => {
-    if (currentStage !== 'waiting_wallet_signature') return;
-    const timer = setTimeout(() => {
-      if ((window as any).lute) {
-        window.dispatchEvent(new CustomEvent('lute-connect', { detail: { action: 'sign' } }));
-      } else {
-        const left = 100 + window.screenX;
-        const top = 100 + window.screenY;
-        window.open('https://lute.app/sign', 'Lute', `width=500,height=750,left=${left},top=${top}`);
-      }
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [currentStage]);
-
+export default function AgentTimeline({ currentStage, currentStepIndex, winnerName, winnerPrice, onBypassSignature, onConfirmSignature }: AgentTimelineProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -175,43 +160,80 @@ export default function AgentTimeline({ currentStage, currentStepIndex, winnerNa
                 </p>
 
                 {stepDetails && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                     <div
                       style={{
-                        padding: '4px 8px',
+                        padding: '6px 10px',
                         borderRadius: 6,
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)',
                         fontSize: 11,
                         fontFamily: 'Inter',
                         color: isActive ? '#ffffff' : '#5a9a5a',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
                       }}
                     >
                       {stepDetails}
                     </div>
 
-                    {step.stageKey === 'waiting_wallet_signature' && isActive && onBypassSignature && (
-                      <button
-                        onClick={onBypassSignature}
+                    {step.stageKey === 'waiting_wallet_signature' && isActive && (
+                      <div
                         style={{
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: 4,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          color: '#ffffff',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          fontFamily: 'Inter',
-                          cursor: 'pointer',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          padding: '10px 12px',
+                          borderRadius: 8,
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
                         }}
                       >
-                        <Zap size={11} color="#5a9a5a" /> Skip / Auto-Sign (Demo)
-                      </button>
+                        {onConfirmSignature && (
+                          <button
+                            onClick={onConfirmSignature}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              backgroundColor: '#ffffff',
+                              color: '#000000',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              fontFamily: 'Inter',
+                              cursor: 'pointer',
+                              border: 'none',
+                              boxShadow: '0 2px 6px rgba(255,255,255,0.1)',
+                            }}
+                          >
+                            <CheckCircle2 size={13} color="#000000" /> Confirm / Prompt Lute
+                          </button>
+                        )}
+
+                        {onBypassSignature && (
+                          <button
+                            onClick={onBypassSignature}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '6px 12px',
+                              borderRadius: 6,
+                              backgroundColor: 'rgba(90, 154, 90, 0.15)',
+                              border: '1px solid rgba(90, 154, 90, 0.4)',
+                              color: '#7bc67b',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              fontFamily: 'Inter',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Zap size={13} color="#7bc67b" /> Auto-Sign (Demo)
+                          </button>
+                        )}
+                      </div>
                     )}
-
-
                   </div>
                 )}
               </div>

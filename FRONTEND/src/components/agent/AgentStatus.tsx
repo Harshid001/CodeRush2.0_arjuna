@@ -15,6 +15,7 @@ interface AgentStatusProps {
   errorType?: AgentErrorType | string;
   errorMessage?: string;
   onReset: () => void;
+  resetButtonText?: string;
 }
 
 const ERROR_CONFIGS: Record<string, { title: string; desc: string }> = {
@@ -40,7 +41,7 @@ const ERROR_CONFIGS: Record<string, { title: string; desc: string }> = {
   },
 };
 
-export default function AgentStatus({ errorType = 'NO_PROVIDER_PASSED_POLICY', errorMessage, onReset }: AgentStatusProps) {
+export default function AgentStatus({ errorType = 'NO_PROVIDER_PASSED_POLICY', errorMessage, onReset, resetButtonText }: AgentStatusProps) {
   const config = ERROR_CONFIGS[errorType] || {
     title: 'Agent Execution Error',
     desc: errorMessage || 'An unexpected error occurred during agent orchestration.',
@@ -106,7 +107,7 @@ export default function AgentStatus({ errorType = 'NO_PROVIDER_PASSED_POLICY', e
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)')}
           >
             <RefreshCw size={13} />
-            <span>Modify Prompt & Retry</span>
+            <span>{resetButtonText || 'Modify Prompt & Retry'}</span>
           </button>
         </div>
       </div>

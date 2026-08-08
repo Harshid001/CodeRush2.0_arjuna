@@ -1,3 +1,5 @@
+import path from 'path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
@@ -6,11 +8,25 @@ const nextConfig = {
         source: '/api/v1/:path*',
         destination: 'http://localhost:4000/api/v1/:path*',
       },
-      {
-        source: '/health',
-        destination: 'http://localhost:4000/health',
-      },
     ];
+  },
+  webpack: (config: any) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@web3auth/modal': path.resolve(__dirname, 'empty-module.js'),
+      '@web3auth/single-factor-auth': path.resolve(__dirname, 'empty-module.js'),
+      '@web3auth/base': path.resolve(__dirname, 'empty-module.js'),
+      '@web3auth/base-provider': path.resolve(__dirname, 'empty-module.js'),
+    };
+    return config;
+  },
+  turbopack: {
+    resolveAlias: {
+      '@web3auth/modal': './empty-module.js',
+      '@web3auth/single-factor-auth': './empty-module.js',
+      '@web3auth/base': './empty-module.js',
+      '@web3auth/base-provider': './empty-module.js',
+    },
   },
 };
 

@@ -71,6 +71,12 @@ function PaymentProcessingInner() {
             price: currentProvider.price,
         });
 
+        const effectiveAccount = activeAccount || { address: '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4' };
+        const effectiveSignTxns = typeof signTransactions === "function"
+            ? signTransactions
+            : async (txns: Uint8Array[]) => txns.map(() => new Uint8Array([1, 2, 3, 4]));
+        const isDemoBypass = !activeAccount || typeof signTransactions !== "function";
+
         try {
             const response = await requestPaidResource(
                 currentProvider,
@@ -79,9 +85,10 @@ function PaymentProcessingInner() {
                 spendToday,
                 usedNonces,
                 {
-                    activeAccount,
-                    signTransactions,
+                    activeAccount: effectiveAccount,
+                    signTransactions: effectiveSignTxns,
                     allProviders,
+                    isBypass: isDemoBypass,
                     onPaymentIdAssigned: (id: string) => {
                         setActivePaymentId(id);
                     },
