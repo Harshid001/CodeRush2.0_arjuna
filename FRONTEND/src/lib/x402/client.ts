@@ -199,7 +199,7 @@ export function createPaidFetch(activeAccount: any, signTransactions: any, onPay
     const hasAuthHeader = !!authHeaderName;
     const headerVal = hasAuthHeader ? (reqHeaders.get(authHeaderName!) || "") : "";
 
-    console.error("[X402 CUSTOM FETCH INPUT]", {
+    console.log("[X402 CUSTOM FETCH INPUT]", {
       inputType: isReqObj ? "Request" : typeof input,
       isRequest: isReqObj,
       url: reqUrl,
