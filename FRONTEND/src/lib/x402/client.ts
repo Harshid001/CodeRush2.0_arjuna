@@ -445,7 +445,7 @@ export async function requestPaidResource(
     );
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     let response: Response;
     try {
@@ -647,7 +647,7 @@ export async function requestPaidResource(
   } catch (err: any) {
     let errorMsg = err?.message || "x402 execution error";
     if (err?.name === "AbortError" || errorMsg.includes("aborted")) {
-      errorMsg = "x402 request timed out: Wallet signing or facilitator response took longer than 15 seconds.";
+      errorMsg = "x402 request timed out: Wallet signing or facilitator response took longer than 120 seconds.";
     } else if (errorMsg === "Failed to fetch") {
       errorMsg = "Failed to fetch: Connection to x402 API provider or facilitator failed. Please ensure your Lute wallet is connected on Algorand TestNet and try again.";
     }
