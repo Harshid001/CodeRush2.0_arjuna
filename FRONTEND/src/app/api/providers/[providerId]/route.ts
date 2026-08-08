@@ -23,12 +23,33 @@ const FACILITATOR_FEE_PAYER =
 const DEFAULT_PAY_TO = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
 
 // --- MODULE SCOPE SINGLETONS (Restored from commit a22b1d6) ---
+let activePaymentId: string | null = null;
+
 const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR_URL });
 
 const originalVerify = facilitatorClient.verify.bind(facilitatorClient);
 facilitatorClient.verify = async (payload: any, requirements: any) => {
+  console.log("[X402 SERVER] FACILITATOR VERIFY START");
+  const startTime = Date.now();
   try {
     const res = await originalVerify(payload, requirements);
+    console.log("[X402 SERVER] FACILITATOR VERIFY SUCCESS");
+
+    if (activePaymentId) {
+      addProvenanceEvent(
+        activePaymentId,
+        "facilitator_verify_response",
+        "server_observed",
+        res && res.isValid === false ? "failed" : "success",
+        res && res.isValid === false ? "Facilitator Verification Rejected" : "Facilitator Verification Succeeded",
+        res && res.isValid === false
+          ? ((res as any).reason || (res as any).error || "Verification rejected by GoPlausible")
+          : "GoPlausible verified atomic transaction group signature.",
+        { isValid: res?.isValid, payer: maskAddress(res?.payer) },
+        Date.now() - startTime
+      );
+    }
+
     if (res && res.isValid === false) {
       console.error("[X402 ACTUAL ERROR] Facilitator verify rejected transaction:", {
         status: 402,
@@ -38,18 +59,51 @@ facilitatorClient.verify = async (payload: any, requirements: any) => {
     }
     return res;
   } catch (err: any) {
-    console.error("[X402 ACTUAL ERROR] Facilitator verify exception:", {
-      errorMessage: err?.message || String(err),
-      errorStack: err?.stack,
-    });
+    console.error("[X402 SERVER] FACILITATOR VERIFY ERROR:", String(err));
+    if (activePaymentId) {
+      addProvenanceEvent(
+        activePaymentId,
+        "facilitator_verify_response",
+        "server_observed",
+        "failed",
+        "Facilitator Verification Error",
+        err?.message || "Verify rejected by GoPlausible",
+        { error: err?.message },
+        Date.now() - startTime
+      );
+    }
     throw err;
   }
 };
 
 const originalSettle = facilitatorClient.settle.bind(facilitatorClient);
 facilitatorClient.settle = async (payload: any, requirements: any) => {
+  console.log("[X402 SERVER] FACILITATOR SETTLE START");
+  const startTime = Date.now();
   try {
     const res = await originalSettle(payload, requirements);
+    console.log("[X402 SERVER] FACILITATOR SETTLE SUCCESS");
+
+    if (activePaymentId) {
+      addProvenanceEvent(
+        activePaymentId,
+        "facilitator_settle_response",
+        "server_observed",
+        res && res.success ? "success" : "failed",
+        res && res.success ? "Facilitator Settlement Confirmed" : "Facilitator Settlement Failed",
+        res && res.success
+          ? `On-chain settlement confirmed: ${res.transaction}`
+          : `Settlement failed: ${res?.errorReason || "Unknown error"}`,
+        {
+          success: res?.success,
+          transaction: res?.transaction,
+          network: res?.network,
+          errorReason: res?.errorReason,
+        },
+        Date.now() - startTime
+      );
+    }
+
     if (res && res.success === false) {
       console.error("[X402 ACTUAL ERROR] Facilitator settlement failed:", {
         status: 402,
@@ -59,10 +113,19 @@ facilitatorClient.settle = async (payload: any, requirements: any) => {
     }
     return res;
   } catch (err: any) {
-    console.error("[X402 ACTUAL ERROR] Facilitator settlement exception:", {
-      errorMessage: err?.message || String(err),
-      errorStack: err?.stack,
-    });
+    console.error("[X402 SERVER] FACILITATOR SETTLE ERROR:", String(err));
+    if (activePaymentId) {
+      addProvenanceEvent(
+        activePaymentId,
+        "facilitator_settle_response",
+        "server_observed",
+        "failed",
+        "Facilitator Settlement Error",
+        err?.message || "Settlement failed",
+        { error: err?.message },
+        Date.now() - startTime
+      );
+    }
     throw err;
   }
 };
@@ -226,6 +289,7 @@ export async function GET(
   );
 
   try {
+    activePaymentId = paymentId;
     const res = await protectedHandler(request);
 
     res.headers.set(

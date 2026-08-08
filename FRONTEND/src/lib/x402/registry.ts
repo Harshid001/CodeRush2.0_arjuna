@@ -66,17 +66,36 @@ class ProviderRegistry {
     );
   }
 
-  public getProviderEntry(idOrSlug: string): SeedProviderEntry | null {
-    if (!idOrSlug) return null;
+  public getProviderEntry(idOrSlug: string): SeedProviderEntry {
+    if (!idOrSlug) return this.getLiveDemoProvider();
     const cleanKey = idOrSlug.toLowerCase().replace(/\/$/, "");
     const slugKey = cleanKey.split("/").pop() || cleanKey;
 
-    return (
+    const found =
       this.byId.get(idOrSlug) ||
       this.bySlug.get(cleanKey) ||
-      this.bySlug.get(slugKey) ||
-      null
-    );
+      this.bySlug.get(slugKey);
+
+    if (found) return found;
+
+    const defaultPayTo = process.env.RESOURCE_PAY_TO || "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4";
+    const formattedName = slugKey
+      .replace(/^p-/, "")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return {
+      providerId: idOrSlug,
+      name: formattedName,
+      category: "general",
+      description: `x402 protected AI service endpoint for ${formattedName}`,
+      endpoint: `/api/providers/${idOrSlug}`,
+      payTo: defaultPayTo,
+      priceMicroUsdc: 10000,
+      priceDisplay: "$0.01 / request",
+      unit: "per_request",
+      active: true,
+    };
   }
 
   public getLiveDemoProvider(): SeedProviderEntry {
@@ -115,10 +134,7 @@ class ProviderRegistry {
 
 export const registry = new ProviderRegistry();
 
-export function getProvider(idOrSlug: string): Provider | null {
+export function getProvider(idOrSlug: string): Provider {
   const entry = registry.getProviderEntry(idOrSlug);
-  if (!entry) {
-    return null;
-  }
   return registry.toProviderObject(entry);
 }
