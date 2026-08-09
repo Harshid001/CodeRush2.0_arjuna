@@ -77,7 +77,7 @@ function PaymentCheckoutInner() {
     // ── Connect Lute ────────────────────────────────────────
     const handleConnectLute = useCallback(async () => {
         setWalletError(null);
-        const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+        const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
 
         if (!luteWallet) {
             setWalletError('Lute wallet extension not detected. Install Lute or use Demo Mode below.');
@@ -109,7 +109,7 @@ function PaymentCheckoutInner() {
     }, [wallets]);
 
     const handleDisconnect = useCallback(() => {
-        const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+        const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
         if (luteWallet?.isConnected) {
             luteWallet.disconnect();
         }

@@ -69,7 +69,7 @@ export default function AgentPage() {
   const handleConfirmSignature = useCallback(async () => {
     console.log('[AGENT PAGE] User clicked Confirm / Prompt Lute Signature');
     try {
-      const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+      const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
       if (luteWallet && !luteWallet.isConnected) {
         await luteWallet.connect().catch((err: any) => {
           console.warn('[AGENT PAGE] Handled Lute wallet connection error:', err?.message || String(err));
@@ -192,7 +192,7 @@ export default function AgentPage() {
     }
 
     // ── Detect Lute ─────────────────────────────────────────────────────────
-    const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+    const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
     const luteDetected = !!luteWallet;
     console.log('[WALLET CONFIG] LUTE DETECTED:', luteDetected);
 
