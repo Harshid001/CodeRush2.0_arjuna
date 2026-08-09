@@ -23,7 +23,7 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd BACKEND
-          npm ci
+          npm install
 
       - name: Typecheck Backend
         run: |
@@ -53,7 +53,7 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd FRONTEND
-          npm ci
+          npm install --legacy-peer-deps
 
       - name: Typecheck Frontend
         run: |
