@@ -18,26 +18,22 @@ interface CompareContextType {
 const CompareContext = createContext<CompareContextType | undefined>(undefined);
 
 export function CompareProvider({ children }: { children: ReactNode }) {
-    const [compareList, setCompareList] = useState<MarketplaceApi[]>([]);
-    const [initialized, setInitialized] = useState(false);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
+    const [compareList, setCompareList] = useState<MarketplaceApi[]>(() => {
+        if (typeof window === 'undefined') return [];
         try {
             const saved = sessionStorage.getItem(STORAGE_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) {
-                    const validList = parsed.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string');
-                    setCompareList(validList.slice(0, MAX_COMPARE));
+                    return parsed.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string').slice(0, MAX_COMPARE);
                 }
             }
         } catch (e) {
             console.warn('[CompareContext] Failed to parse compare list from sessionStorage:', e);
-        } finally {
-            setInitialized(true);
         }
-    }, []);
+        return [];
+    });
+    const [initialized] = useState(true);
 
     useEffect(() => {
         if (!initialized || typeof window === 'undefined') return;

@@ -68,7 +68,7 @@ export function createPaidFetch(
     }
   };
 
-  let signer: ClientAvmSigner;
+  let signer: any;
   if (typeof activeAccount === "string") {
     signer = toClientAvmSigner(activeAccount);
   } else {

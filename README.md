@@ -1,3 +1,13 @@
+## 📋 Project Information
+
+- **Team Name**: Arjuna
+- **Project Title**: NexusAPI (AgentMarket — Pay-per-Use AI & Data API Marketplace)
+- **Track/Theme**: Agentic Commerce / AI Infrastructure / Web3 Payments
+- **Target Network**: Algorand TestNet
+- **Wallet Support**: Lute Wallet (AVM TestNet transaction signer), Pera Wallet, Defly Wallet
+
+---
+
 # CodeRush 2.0 | Team Project Repository
 
 ![NexusAPI Banner](./nexusapi_banner.png)
@@ -7,16 +17,6 @@
 [![Next.js 15](https://img.shields.io/badge/Next.js-15%20App%20Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![DeepSeek AI](https://img.shields.io/badge/DeepSeek-V4%20Orchestration-blue?style=for-the-badge)](https://deepseek.com)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
-
----
-
-## 📋 Project Information
-
-- **Team Name**: Arjuna
-- **Project Title**: NexusAPI (AgentMarket — Pay-per-Use AI & Data API Marketplace)
-- **Track/Theme**: Agentic Commerce / AI Infrastructure / Web3 Payments
-- **Target Network**: Algorand TestNet
-- **Wallet Support**: Lute Wallet (AVM TestNet transaction signer), Pera Wallet, Defly Wallet
 
 ---
 

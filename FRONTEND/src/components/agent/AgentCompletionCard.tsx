@@ -23,9 +23,9 @@ export default function AgentCompletionCard({ report, receipt, record, onRunAnot
   const winner = report.winner;
   if (!winner) return null;
 
-  const receiptId = receipt?.id || record?.receiptId || `rcpt_${Date.now()}`;
+  const receiptId = receipt?.id || record?.receiptId || 'rcpt_completed';
   const txHash = receipt?.settlement?.settlementId || record?.transactionHash || '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4';
-  const invoiceId = record?.invoiceId || `inv_${Date.now()}`;
+  const invoiceId = record?.invoiceId || 'inv_completed';
 
   const actualResult = result || record?.result || (record as any)?.result;
   const actualLatency = latency || record?.latency || (record as any)?.latency || 142;

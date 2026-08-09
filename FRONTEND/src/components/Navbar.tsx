@@ -34,7 +34,7 @@ export default function Navbar({
 
   // Algorand useWallet hook
   const { wallets, activeAddress: algoActiveAddress } = useWallet();
-  const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+  const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
 
   // Fallback demo wallet state when Lute extension is not detected
   const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);

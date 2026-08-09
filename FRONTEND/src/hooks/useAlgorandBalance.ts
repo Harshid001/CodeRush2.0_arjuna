@@ -82,15 +82,24 @@ export function useAlgorandBalance(address: string | null | undefined): Algorand
   }, [address]);
 
   useEffect(() => {
-    fetchBalance();
+    let active = true;
+    const load = async () => {
+      if (active) {
+        await fetchBalance();
+      }
+    };
+    load();
 
     if (!address) return;
 
     const intervalId = setInterval(() => {
-      fetchBalance();
+      load();
     }, REFRESH_INTERVAL_MS);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
   }, [address, fetchBalance]);
 
   return {

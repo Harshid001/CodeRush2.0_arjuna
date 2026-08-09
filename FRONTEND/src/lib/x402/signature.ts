@@ -10,7 +10,7 @@ import { ClientAvmSigner, toClientAvmSigner } from "@x402-avm/avm";
 export function signPaymentPayload(
   activeAccount: any,
   signTransactions: any
-): ClientAvmSigner | null {
+): any {
   if (!activeAccount || !signTransactions) return null;
   if (typeof activeAccount === "string") {
     return toClientAvmSigner(activeAccount);

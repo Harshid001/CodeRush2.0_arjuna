@@ -173,7 +173,7 @@ async function resolveFacilitatorFeePayer(): Promise<string | undefined> {
   try {
     const supported = await facilitatorClient.getSupported();
     const algorandKind = supported.kinds.find(
-      (kind) =>
+      (kind: any) =>
         kind.scheme === "exact" &&
         kind.network === ALGORAND_TESTNET_CAIP2
     );

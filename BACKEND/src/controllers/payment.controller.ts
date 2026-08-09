@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import mongoose from "mongoose";
 import { paymentService } from "../services/payment.service";
 import { budgetService } from "../services/budget.service";
 import { policyService } from "../services/policy.service";
@@ -22,7 +23,12 @@ export class PaymentController {
   createAndExecute = async (req: Request, res: Response, next: NextFunction) => {
     console.error("[PAYMENTS API] REQUEST RECEIVED");
     console.error("[PAYMENTS API] BODY FIELDS:", Object.keys(req.body || {}));
+    
+    let session: mongoose.ClientSession | null = null;
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const input = createSchema.parse(req.body);
       const userId = req.auth?.userId || "anonymous";
 
@@ -82,11 +88,18 @@ export class PaymentController {
         network: input.network,
       });
 
+      await session.commitTransaction();
+      session.endSession();
+
       res.status(201).json({
         success: true,
         data: { payment: settled, receipt, requiresApproval: budgetCheck.requiresApproval },
       });
     } catch (err: any) {
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       console.error("========== PAYMENTS API ERROR ==========");
       console.error("ERROR:", String(err));
 

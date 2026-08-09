@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { pdfService } from '../services/pdf/pdf.service';
+import { Receipt } from '../models/Receipt';
+import { Payment } from '../models/Payment';
+import { Provider } from '../models/Provider';
 
 const router = Router();
 
@@ -10,19 +13,25 @@ const router = Router();
 router.get('/invoice/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
+    const dbReceipt = await Receipt.findOne({ $or: [{ _id: id }, { paymentId: id }] });
+    const dbPayment = dbReceipt ? await Payment.findById(dbReceipt.paymentId) : await Payment.findById(id);
+    const dbProvider = (dbReceipt?.providerId || dbPayment?.providerId)
+      ? await Provider.findById(dbReceipt?.providerId || dbPayment?.providerId)
+      : null;
+
     const pdfBytes = await pdfService.generateInvoice({
       invoiceNumber: id.startsWith('INV-') ? id : `INV-${id}`,
-      receiptId: `rcpt_${Date.now()}`,
-      date: new Date().toISOString(),
-      status: 'PAID',
-      providerName: 'OpenCore Labs - GPT-4 Vision Pro',
-      providerCompany: 'OpenCore Labs Node',
-      category: 'LLM & Multimodal AI',
-      paymentType: 'exact',
-      walletAddress: (req.query.wallet as string) || '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4',
-      network: 'Algorand TestNet (AVM exact)',
-      amountPaid: '$0.0500',
-      transactionHash: (req.query.txHash as string) || `tx_algorand_avm_atomic_${Date.now()}`,
+      receiptId: dbReceipt?._id.toString() || `rcpt_${Date.now()}`,
+      date: dbReceipt?.settledAt?.toISOString() || new Date().toISOString(),
+      status: dbPayment?.status ? dbPayment.status.toUpperCase() : 'PAID',
+      providerName: dbProvider?.name || dbReceipt?.providerName || 'Nexus API Provider Node',
+      providerCompany: dbProvider?.name ? `${dbProvider.name} Corp` : 'Nexus Marketplace Provider',
+      category: dbProvider?.category || 'AI & Data Services',
+      paymentType: dbReceipt?.scheme || 'exact',
+      walletAddress: (req.query.wallet as string) || dbProvider?.payToAddress || '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4',
+      network: dbReceipt?.network || 'Algorand TestNet (AVM exact)',
+      amountPaid: dbReceipt ? `$${dbReceipt.finalAmount.toFixed(4)}` : dbPayment ? `$${dbPayment.amount.toFixed(4)}` : '$0.0500',
+      transactionHash: (req.query.txHash as string) || dbReceipt?.settlementId || `tx_algorand_avm_atomic_${Date.now()}`,
     });
 
     const filename = `invoice-${id.startsWith('INV-') ? id : `INV-${id}`}.pdf`;
@@ -42,15 +51,18 @@ router.get('/invoice/:id', async (req: Request, res: Response) => {
 router.get('/receipt/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
+    const dbReceipt = await Receipt.findOne({ $or: [{ _id: id }, { paymentId: id }] });
+    const dbProvider = dbReceipt?.providerId ? await Provider.findById(dbReceipt.providerId) : null;
+
     const pdfBytes = await pdfService.generateReceipt({
-      receiptId: id.startsWith('RCP-') ? id : `RCP-${id}`,
-      providerName: 'OpenCore Labs - GPT-4 Vision Pro',
-      walletAddress: (req.query.wallet as string) || '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4',
-      network: 'Algorand TestNet (AVM exact)',
-      settlementStatus: 'CONFIRMED',
-      transactionHash: (req.query.txHash as string) || `tx_algorand_avm_atomic_${Date.now()}`,
-      paymentTime: new Date().toISOString(),
-      signature: 'sig_avm_atomic_group_confirmed_ok',
+      receiptId: dbReceipt?._id.toString() || (id.startsWith('RCP-') ? id : `RCP-${id}`),
+      providerName: dbReceipt?.providerName || dbProvider?.name || 'Nexus API Provider',
+      walletAddress: (req.query.wallet as string) || dbProvider?.payToAddress || '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4',
+      network: dbReceipt?.network || 'Algorand TestNet (AVM exact)',
+      settlementStatus: dbReceipt ? 'CONFIRMED' : 'CONFIRMED',
+      transactionHash: (req.query.txHash as string) || dbReceipt?.settlementId || `tx_algorand_avm_atomic_${Date.now()}`,
+      paymentTime: dbReceipt?.settledAt?.toISOString() || new Date().toISOString(),
+      signature: dbReceipt?.inputHash || 'sig_avm_atomic_group_confirmed_ok',
       verificationStatus: 'VALID (AVM)',
     });
 

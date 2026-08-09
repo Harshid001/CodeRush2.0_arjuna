@@ -52,22 +52,31 @@ export class AnalyticsService {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
 
-    const topProviders = await Promise.all(
-      topProvidersData.map(async ([providerId, revenue]) => {
-        const provider = await Provider.findById(providerId);
-        const calls = settledPayments.filter((p) => p.providerId === providerId).length;
-        return {
-          providerId,
-          name: provider?.name || "Unknown",
-          revenue,
-          calls,
-        };
-      })
+    const allProviderIds = Array.from(
+      new Set([
+        ...topProvidersData.map(([id]) => id),
+        ...payments.map((p) => p.providerId).filter(Boolean),
+      ])
     );
+
+    const providerDocs = await Provider.find({ _id: { $in: allProviderIds } });
+    const providerMap = new Map(providerDocs.map((p) => [p._id.toString(), p]));
+
+    const topProviders = topProvidersData.map(([providerId, revenue]) => {
+      const provider = providerMap.get(providerId);
+      const calls = settledPayments.filter((p) => p.providerId === providerId).length;
+      return {
+        providerId,
+        name: provider?.name || "Unknown",
+        revenue,
+        calls,
+      };
+    });
 
     const transactionsByCategory = new Map<string, number>();
     for (const p of payments) {
-      const provider = await Provider.findById(p.providerId);
+      if (!p.providerId) continue;
+      const provider = providerMap.get(p.providerId);
       if (provider) {
         const cat = provider.category;
         transactionsByCategory.set(cat, (transactionsByCategory.get(cat) || 0) + 1);
