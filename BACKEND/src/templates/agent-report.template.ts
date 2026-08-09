@@ -188,7 +188,7 @@ export async function generateAgentReportPdf(data: AgentReportTemplateData): Pro
     });
 
     page.drawText('Scan to Verify', { x: width - 135, y: 38, size: 8, font: fontRegular, color: rgb(0.5, 0.55, 0.65) });
-  } catch (e) {
+  } catch {
     // Graceful QR fallback if rendering fails
   }
 
