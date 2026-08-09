@@ -1,3 +1,5 @@
+# CodeRush 2.0 | Team Project Readme
+
 ## 📋 Project Information
 
 - **Team Name**: Arjuna
@@ -7,8 +9,6 @@
 - **Wallet Support**: Lute Wallet (AVM TestNet transaction signer), Pera Wallet, Defly Wallet
 
 ---
-
-# CodeRush 2.0 | Team Project Repository
 
 ![NexusAPI Banner](./nexusapi_banner.png)
 
