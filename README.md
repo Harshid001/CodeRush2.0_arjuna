@@ -87,7 +87,8 @@ FRONTEND_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
 NEXT_PUBLIC_HEALTH_URL=http://localhost:4000/health
-NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key_here
+# DeepSeek API Key (Server-Side Only)
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
 
 NEXT_PUBLIC_ALGOD_SERVER=https://testnet-api.algonode.cloud
 NEXT_PUBLIC_ALGOD_PORT=443

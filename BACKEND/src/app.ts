@@ -2,15 +2,18 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import { apiRoutes } from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
+import { csrfProtection } from "./middleware/csrf";
 
 const app = express();
 
 app.use(helmet());
+app.use(cookieParser());
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -43,6 +46,7 @@ app.use(
 );
 
 app.use(express.json({ limit: "1mb" }));
+app.use(csrfProtection);
 app.use(morgan("dev"));
 
 app.get("/health", (_req, res) => {

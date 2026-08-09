@@ -12,4 +12,3 @@ declare module 'qrcode';
 declare module 'algosdk';
 declare module '@hookform/resolvers/zod';
 declare module 'react-hook-form';
-

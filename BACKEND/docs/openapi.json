@@ -1,0 +1,77 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "x402 Pay-per-Use API Marketplace Backend",
+    "description": "High-throughput API Marketplace backend supporting Algorand TestNet AVM micropayments, provider routing, budget enforcement, and receipts.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/api/v1",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://nexusapi-arjuna.vercel.app/api/v1",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check Endpoint",
+        "responses": {
+          "200": {
+            "description": "Healthy database connection and server status"
+          },
+          "503": {
+            "description": "Database disconnected or unhealthy"
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "summary": "List all active API marketplace providers",
+        "responses": {
+          "200": {
+            "description": "List of active providers with pricing, scores, and endpoints"
+          }
+        }
+      }
+    },
+    "/payments": {
+      "post": {
+        "summary": "Execute x402 AVM payment and settlement",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Payment executed and receipt issued"
+          },
+          "400": {
+            "description": "Invalid input or inactive provider"
+          },
+          "403": {
+            "description": "Budget limit exceeded or policy denied"
+          }
+        }
+      }
+    }
+  }
+}

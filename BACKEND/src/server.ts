@@ -5,7 +5,9 @@ import { seedDatabase } from "./services/seed.service";
 
 async function start() {
   await connectDB();
-  await seedDatabase();
+  if (env.NODE_ENV === "development" || process.env.ENABLE_AUTO_SEED === "true") {
+    await seedDatabase();
+  }
 
   app.listen(env.PORT, () => {
     console.log(`[server] x402 Backend running on http://localhost:${env.PORT}`);

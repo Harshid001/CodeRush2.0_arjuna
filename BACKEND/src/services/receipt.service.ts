@@ -63,6 +63,10 @@ export class ReceiptService {
     if (!receipt) throw new ApiError(404, "Receipt not found");
     return receipt;
   }
+
+  async getByPaymentId(paymentId: string) {
+    return Receipt.findOne({ paymentId });
+  }
 }
 
 export const receiptService = new ReceiptService();

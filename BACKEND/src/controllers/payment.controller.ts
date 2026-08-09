@@ -26,11 +26,32 @@ export class PaymentController {
     
     let session: mongoose.ClientSession | null = null;
     try {
-      session = await mongoose.startSession();
-      session.startTransaction();
+      if (mongoose.connection.readyState === 1) {
+        try {
+          session = await mongoose.startSession();
+          session.startTransaction();
+        } catch {
+          session = null;
+        }
+      }
 
       const input = createSchema.parse(req.body);
       const userId = req.auth?.userId || "anonymous";
+
+      const idempotencyKey = (req.headers["idempotency-key"] as string) || input.requirementNonce;
+      if (idempotencyKey) {
+        const existingReceipt = await receiptService.getByPaymentId(idempotencyKey);
+        if (existingReceipt) {
+          if (session) {
+            await session.abortTransaction();
+            session.endSession();
+          }
+          return res.status(200).json({
+            success: true,
+            data: { receipt: existingReceipt, isIdempotentReplay: true },
+          });
+        }
+      }
 
       const provider = await providerService.getById(input.providerId);
       if (provider && !provider.active) {

@@ -2056,10 +2056,19 @@ export async function seedDatabase() {
     });
   }
 
+  let providerIdx = 0;
   for (const p of INITIAL_PROVIDERS) {
+    providerIdx++;
+    const distinctWallet =
+      p.payToAddress && p.payToAddress !== "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4"
+        ? p.payToAddress
+        : "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4".substring(0, 48) +
+          providerIdx.toString(36).padStart(10, "0").toUpperCase();
+
     await Provider.create({
       _id: generateId("p"),
       ...p,
+      payToAddress: distinctWallet,
       active: true,
       totalCalls: 0,
       totalRevenue: 0,
