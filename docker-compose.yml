@@ -21,7 +21,7 @@ services:
       PORT: 4000
       NODE_ENV: production
       MONGODB_URI: mongodb://mongodb:27017/x402-marketplace
-      JWT_SECRET: dev-secret-change-in-production-nexus-402-secure-key
+      JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: http://localhost:3000
     depends_on:
       - mongodb

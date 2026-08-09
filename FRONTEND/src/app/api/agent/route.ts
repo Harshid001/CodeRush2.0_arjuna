@@ -107,7 +107,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY || 'sk-xt-3cd6845f529fac798b2bd0dc7110c7714883137bbd917de1';
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json<AgentApiRouteResponse>(
+        { success: false, error: 'DeepSeek API key is not configured on the server.' },
+        { status: 500 }
+      );
+    }
     const baseUrl = process.env.DEEPSEEK_BASE_URL || 'https://api.xkiro.com/v1';
     const model = process.env.DEEPSEEK_MODEL || 'deepseek/deepseek-v4-pro';
 
