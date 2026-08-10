@@ -339,3 +339,20 @@ export async function updateUserProfileBackend(data: { name?: string; walletAddr
     return null;
   }
 }
+
+export async function walletAuthBackend(walletAddress: string, chainType: string = "algorand"): Promise<{ user: Record<string, any>; token: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/wallet`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ walletAddress, chainType }),
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || json.error || "Failed to authenticate wallet with backend");
+  }
+
+  return json.data;
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { fetchUserProfile, updateUserProfileBackend } from '@/lib/api';
+import { fetchUserProfile, updateUserProfileBackend, walletAuthBackend } from '@/lib/api';
 
 export interface UserProfile {
   id: string;
@@ -20,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   isLoggedIn: boolean;
   login: (user: UserProfile, token: string) => void;
+  loginWithWallet: (walletAddress: string, chainType?: string) => Promise<UserProfile | null>;
   logout: () => void;
   updateProfile: (updates: { name?: string; walletAddress?: string; avatarUrl?: string }) => Promise<boolean>;
   refetchProfile: () => Promise<void>;
@@ -154,6 +155,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithWallet = async (walletAddress: string, chainType: string = 'algorand'): Promise<UserProfile | null> => {
+    try {
+      const res = await walletAuthBackend(walletAddress, chainType);
+      const bUser = res.user;
+      const formattedUser: UserProfile = {
+        id: bUser._id || bUser.id || 'usr_wallet',
+        email: bUser.email || '',
+        name: bUser.name || `Wallet (${walletAddress.slice(0, 6)}...)`,
+        role: bUser.role || 'developer',
+        walletAddress: bUser.walletAddress || walletAddress,
+        avatarUrl: bUser.avatarUrl || '',
+      };
+      login(formattedUser, res.token);
+      return formattedUser;
+    } catch (err) {
+      console.warn('[AuthContext] loginWithWallet error:', err);
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -162,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isLoggedIn: !!user || !!token,
         login,
+        loginWithWallet,
         logout,
         updateProfile,
         refetchProfile,

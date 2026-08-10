@@ -12,7 +12,7 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  if (err.name === "ValidationError") {
+  if (err.name === "ZodError" || err.name === "ValidationError") {
     res.status(400).json({
       success: false,
       message: err.message,

@@ -11,6 +11,8 @@ export interface IUser {
   avatarUrl?: string;
   role: "developer" | "provider" | "admin";
   walletAddress?: string;
+  chainType?: "evm" | "algorand";
+  nonce?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -26,12 +28,15 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     avatarUrl: { type: String },
     role: { type: String, enum: ["developer", "provider", "admin"], default: "developer" },
-    walletAddress: { type: String, trim: true },
+    walletAddress: { type: String, trim: true, sparse: true, index: true },
+    chainType: { type: String, enum: ["evm", "algorand"] },
+    nonce: { type: String },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
 UserSchema.index({ role: 1 });
+UserSchema.index({ walletAddress: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);

@@ -333,43 +333,43 @@ export default function ComparePage() {
                             }}>
                                 <CompareRow label="Category" values={compareList.map(a => a.cat)} />
                                 <CompareRow label="Description" values={compareList.map(a =>
-                                    <span style={{ fontSize: 12, lineHeight: 1.5, color: '#999' }}>{a.desc}</span>
+                                    <span key={a.id} style={{ fontSize: 12, lineHeight: 1.5, color: '#999' }}>{a.desc}</span>
                                 )} />
                                 <CompareRow
                                     label="Price"
-                                    values={compareList.map(a => <span style={{ fontWeight: 600 }}>{a.price}</span>)}
+                                    values={compareList.map(a => <span key={a.id} style={{ fontWeight: 600 }}>{a.price}</span>)}
                                     highlights={compareList.map(a => a.id === lowestPriceId)}
                                 />
                                 <CompareRow label="Payment Model" values={compareList.map(a => a.model)} />
                                 <CompareRow label="Rate Limit" values={compareList.map(a => a.cap)} />
                                 <CompareRow
                                     label="Quality Score"
-                                    values={compareList.map(a => <span style={{ fontWeight: 600 }}>{a.qualityScore}%</span>)}
+                                    values={compareList.map(a => <span key={a.id} style={{ fontWeight: 600 }}>{a.qualityScore}%</span>)}
                                     highlights={compareList.map(a => a.id === highestQualityId)}
                                 />
                                 <CompareRow
                                     label="Latency"
-                                    values={compareList.map(a => <span>{a.latency ?? 'N/A'}ms</span>)}
+                                    values={compareList.map(a => <span key={a.id}>{a.latency ?? 'N/A'}ms</span>)}
                                     highlights={compareList.map(a => a.id === lowestLatencyId)}
                                 />
                                 <CompareRow
                                     label="Reliability"
-                                    values={compareList.map(a => <span>{a.reliability ?? 'N/A'}%</span>)}
+                                    values={compareList.map(a => <span key={a.id}>{a.reliability ?? 'N/A'}%</span>)}
                                     highlights={compareList.map(a => a.id === highestReliabilityId)}
                                 />
                                 <CompareRow label="Network" values={compareList.map(a => a.network ?? a.chain)} />
                                 <CompareRow label="Authentication" values={compareList.map(a => a.authType ?? 'api-key')} />
                                 <CompareRow label="Methods" values={compareList.map(a => (a.supportedMethods ?? ['POST']).join(', '))} />
                                 <CompareRow label="Endpoint" values={compareList.map(a =>
-                                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#888' }}>{a.endpoint ?? '—'}</span>
+                                    <span key={a.id} style={{ fontSize: 11, fontFamily: 'monospace', color: '#888' }}>{a.endpoint ?? '—'}</span>
                                 )} />
                                 <CompareRow label="Rating" values={compareList.map(a =>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                         <Star size={12} color="#5a9a5a" /> {a.rating} ({a.reviews} reviews)
                                     </span>
                                 )} />
                                 <CompareRow label="Tags" values={compareList.map(a =>
-                                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                    <div key={a.id} style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                                         {(a.tags ?? []).map(t => (
                                             <span key={t} style={{
                                                 padding: '2px 8px', borderRadius: 6,
@@ -384,7 +384,7 @@ export default function ComparePage() {
                                     values={compareList.map(a => {
                                         const score = computeOverall(a);
                                         return (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                 <span style={{ fontWeight: 700, fontSize: 16, color: a.id === bestOverallId ? '#5a9a5a' : '#ccc' }}>
                                                     {score}
                                                 </span>

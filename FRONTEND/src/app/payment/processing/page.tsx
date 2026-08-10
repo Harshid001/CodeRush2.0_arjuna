@@ -169,7 +169,7 @@ function PaymentProcessingInner() {
         }
 
         // Try to connect Lute
-        const luteWallet = wallets?.find(w => w.id === WalletId.LUTE);
+        const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
         if (luteWallet) {
             setWalletPhase('connecting');
             try {

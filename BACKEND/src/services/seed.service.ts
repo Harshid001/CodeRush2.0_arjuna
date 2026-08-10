@@ -948,7 +948,22 @@ const INITIAL_PROVIDERS = [
       "detailed_scores": "object"
 },
   },
-
+  {
+    name: "Llama-3 70B Sentiment & Tone Analyzer",
+    description: "Llama-3 70B Sentiment & Tone Analyzer service for global application scale. Billed as exact flat rate per invocation.",
+    category: "Sentiment Analysis" as ProviderCategory,
+    price: 0.002,
+    paymentType: "exact" as const,
+    qualityScore: 97,
+    payToAddress: "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4",
+    network: "algorand-testnet",
+    endpoint: "https://api.llama3-sentiment.ai/v1",
+    outputSchema: {
+      "sentiment": "string",
+      "score": "number",
+      "tone": "string"
+},
+  },
   {
     name: "Google Cloud Vision OCR",
     description: "Google Cloud Vision OCR service for global application scale. Billed as exact flat rate per invocation.",
@@ -1993,7 +2008,8 @@ const INITIAL_PROVIDERS = [
 
 export async function seedDatabase() {
   const userCount = await User.countDocuments();
-  if (userCount > 0) {
+  const providerCount = await Provider.countDocuments();
+  if (userCount > 0 && providerCount > 0) {
     console.log("[seed] Database already has data, skipping seed.");
     return;
   }
@@ -2040,10 +2056,19 @@ export async function seedDatabase() {
     });
   }
 
+  let providerIdx = 0;
   for (const p of INITIAL_PROVIDERS) {
+    providerIdx++;
+    const distinctWallet =
+      p.payToAddress && p.payToAddress !== "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4"
+        ? p.payToAddress
+        : "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4".substring(0, 48) +
+          providerIdx.toString(36).padStart(10, "0").toUpperCase();
+
     await Provider.create({
       _id: generateId("p"),
       ...p,
+      payToAddress: distinctWallet,
       active: true,
       totalCalls: 0,
       totalRevenue: 0,
@@ -2052,7 +2077,7 @@ export async function seedDatabase() {
     });
   }
 
-  const providerCount = await Provider.countDocuments();
-  console.log(`[seed] Created 3 users and ${providerCount} providers.`);
+  const finalProviderCount = await Provider.countDocuments();
+  console.log(`[seed] Created 3 users and ${finalProviderCount} providers.`);
   console.log("[seed] Login: admin@x402.io / admin123, dev@x402.io / admin123");
 }

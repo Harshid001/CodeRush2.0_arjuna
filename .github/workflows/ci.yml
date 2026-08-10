@@ -1,0 +1,79 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-checks:
+    name: Backend Lint, Typecheck & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: BACKEND/package-lock.json
+
+      - name: Install Backend Dependencies
+        run: |
+          cd BACKEND
+          npm install
+
+      - name: Typecheck Backend
+        run: |
+          cd BACKEND
+          npm run typecheck
+
+      - name: Run Backend Tests
+        env:
+          JWT_SECRET: dev-secret-change-in-production-nexus-402-secure-key
+        run: |
+          cd BACKEND
+          npm test
+
+  frontend-checks:
+    name: Frontend Typecheck & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: FRONTEND/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd FRONTEND
+          npm install --legacy-peer-deps
+
+      - name: Typecheck Frontend
+        run: |
+          cd FRONTEND
+          npm run typecheck
+
+      - name: Build Frontend
+        run: |
+          cd FRONTEND
+          npm run build
+
+  docker-build:
+    name: Build Docker Images
+    needs: [backend-checks, frontend-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Backend Docker Image
+        run: docker build -t nexus-backend ./BACKEND
+
+      - name: Build Frontend Docker Image
+        run: docker build -t nexus-frontend ./FRONTEND

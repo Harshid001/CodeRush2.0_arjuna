@@ -165,6 +165,76 @@ export class AuthService {
     };
   }
 
+  async getWalletNonce(walletAddress: string) {
+    const cleanAddress = walletAddress.trim();
+    let user = await User.findOne({ walletAddress: cleanAddress });
+    const nonce = `Sign in to NexusAPI with wallet: ${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+
+    if (user) {
+      user.nonce = nonce;
+      await user.save();
+    }
+    return { walletAddress: cleanAddress, nonce };
+  }
+
+  async walletAuth(walletAddress: string, chainType: "evm" | "algorand" = "algorand", name?: string) {
+    const cleanAddress = walletAddress.trim();
+    if (!cleanAddress) {
+      throw new ApiError(400, "Wallet address is required");
+    }
+
+    let user = await User.findOne({ walletAddress: cleanAddress });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new ApiError(403, "Account is deactivated");
+      }
+      user.chainType = chainType;
+      await user.save();
+    } else {
+      const generatedEmail = `${cleanAddress.slice(0, 10).toLowerCase()}@wallet.local`;
+      const displayName = name || `Wallet ${cleanAddress.slice(0, 6)}...${cleanAddress.slice(-4)}`;
+
+      // Check if email collides
+      const existingEmail = await User.findOne({ email: generatedEmail });
+      const finalEmail = existingEmail ? `${cleanAddress.toLowerCase()}@wallet.local` : generatedEmail;
+
+      user = await User.create({
+        _id: generateId("usr"),
+        email: finalEmail,
+        name: displayName,
+        walletAddress: cleanAddress,
+        chainType,
+        role: "developer",
+        isActive: true,
+      });
+
+      await Budget.create({
+        userId: user._id,
+        perRequestMax: 5,
+        perProviderDailyMax: 10,
+        dailyMax: 20,
+        minQualityScore: 70,
+        spentToday: 0,
+        spentByProvider: {},
+      });
+    }
+
+    const token = this.signToken(user._id, user.email, user.role);
+    return {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        walletAddress: user.walletAddress,
+        chainType: user.chainType,
+        avatarUrl: user.avatarUrl,
+      },
+      token,
+    };
+  }
+
   async getProfile(userId: string) {
     const user = await User.findById(userId).select("-passwordHash");
     if (!user) {

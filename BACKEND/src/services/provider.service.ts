@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Provider } from "../models";
 import { ApiError } from "../utils/ApiError";
 import { generateId } from "../utils/ids";
@@ -40,6 +41,10 @@ export class ProviderService {
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
+
+    if (mongoose.connection.readyState !== 1) {
+      return { providers: [], total: 0, page, limit, totalPages: 0 };
+    }
 
     const [providers, total] = await Promise.all([
       Provider.find(filter).sort({ qualityScore: -1 }).skip(skip).limit(limit),
@@ -90,6 +95,15 @@ export class ProviderService {
       const scoreB = b.qualityScore / Math.max(0.01, b.price);
       return scoreB - scoreA;
     });
+  }
+
+  async recordCall(id: string, latencyMs: number, revenue: number) {
+    const provider = await Provider.findById(id);
+    if (!provider) return;
+    const totalCalls = (provider.totalCalls || 0) + 1;
+    const totalRevenue = (provider.totalRevenue || 0) + revenue;
+    const avgLatencyMs = Math.round(((provider.avgLatencyMs || 50) * (provider.totalCalls || 0) + latencyMs) / totalCalls);
+    await Provider.findByIdAndUpdate(id, { $set: { totalCalls, totalRevenue, avgLatencyMs } });
   }
 }
 

@@ -68,7 +68,7 @@ export function createPaidFetch(
     }
   };
 
-  let signer: ClientAvmSigner;
+  let signer: any;
   if (typeof activeAccount === "string") {
     signer = toClientAvmSigner(activeAccount);
   } else {
@@ -445,6 +445,9 @@ export async function requestPaidResource(
 
   try {
     if (options.isBypass) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Demo payment bypass mode is strictly disabled in production builds.");
+      }
       if (!options.activeAccount) {
         options.activeAccount = { address: "36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4" };
       }

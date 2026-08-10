@@ -1211,4 +1211,12 @@ export const INITIAL_PROVIDERS: Provider[] = [
     },
     active: true,
   },
-];
+].map((p, idx) => ({
+  ...p,
+  payToAddress:
+    p.payToAddress && p.payToAddress !== DEFAULT_DEMO_ALGORAND_ADDRESS
+      ? p.payToAddress
+      : DEFAULT_DEMO_ALGORAND_ADDRESS.substring(0, 48) + idx.toString(36).padStart(10, "0").toUpperCase(),
+})) as Provider[];
+
+

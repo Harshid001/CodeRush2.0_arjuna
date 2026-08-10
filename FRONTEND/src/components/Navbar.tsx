@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Wallet, User, Menu, X, Zap, Copy, Check, LogOut, Coins, ExternalLink, RefreshCw } from 'lucide-react';
 import { useWallet, WalletId } from '@txnlab/use-wallet-react';
+import { useAccount, useDisconnect } from 'wagmi';
 import { useAlgorandBalance } from '@/hooks/useAlgorandBalance';
 import { useAuth } from '@/context/AuthContext';
+import WalletConnectModal from '@/components/WalletConnectModal';
 
 const links = [
   { label: 'AI Agent', href: '/agent' },
@@ -31,12 +33,17 @@ export default function Navbar({
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Algorand useWallet hook
   const { wallets, activeAddress: algoActiveAddress } = useWallet();
-  const luteWallet = wallets?.find((w) => w.id === WalletId.LUTE);
+  const activeAlgoWallet = wallets?.find((w: any) => w.isConnected);
 
-  // Fallback demo wallet state when Lute extension is not detected
+  // EVM (Wagmi/Zerion) hook
+  const { address: evmAddress, isConnected: isEvmConnected, connector: activeEvmConnector } = useAccount();
+  const { disconnect: disconnectEvm } = useDisconnect();
+
+  // Fallback demo wallet state when extension is not detected
   const [demoWalletAddress, setDemoWalletAddress] = useState<string | null>(null);
   const [showLuteAlert, setShowLuteAlert] = useState(false);
 
@@ -47,37 +54,37 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const activeAddress = mounted ? (algoActiveAddress || demoWalletAddress) : null;
-  const activeIsConnected = mounted ? (!!algoActiveAddress || !!demoWalletAddress) : false;
+  const activeAddress = mounted ? (evmAddress || algoActiveAddress || demoWalletAddress) : null;
+  const activeIsConnected = mounted ? (isEvmConnected || !!algoActiveAddress || !!demoWalletAddress) : false;
+
+  const walletProviderName = isEvmConnected
+    ? activeEvmConnector?.name || 'EVM Wallet'
+    : activeAlgoWallet
+    ? activeAlgoWallet.metadata.name || 'Algorand Wallet'
+    : algoActiveAddress
+    ? 'Algorand Wallet'
+    : demoWalletAddress
+    ? 'Algorand Demo'
+    : '';
 
   // Live Algorand TestNet Indexer balances
-  const { algoBalance, usdcBalance, isLoading: isBalanceLoading, error: balanceError, refetch: refetchBalance } = useAlgorandBalance(activeAddress);
+  const { algoBalance, usdcBalance, isLoading: isBalanceLoading, error: balanceError, refetch: refetchBalance } = useAlgorandBalance(algoActiveAddress || demoWalletAddress);
 
   const formattedAlgo = `${algoBalance.toFixed(4)} ALGO`;
   const formattedUsdc = `${usdcBalance.toFixed(2)} USDC`;
 
-  const handleConnect = async () => {
-    if (luteWallet) {
-      try {
-        if (!luteWallet.isConnected) {
-          await luteWallet.connect();
-          setShowLuteAlert(false);
-          setDemoWalletAddress(null);
-          return;
-        }
-      } catch (e) {
-        console.warn('Lute wallet connection error:', e);
-      }
-    }
-
-    // Fallback if Lute extension isn't detected or connection was cancelled
-    setShowLuteAlert(true);
-    setDemoWalletAddress('GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74');
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
   };
 
   const handleDisconnect = () => {
-    if (luteWallet && luteWallet.isConnected) {
-      luteWallet.disconnect();
+    if (isEvmConnected) {
+      disconnectEvm();
+    }
+    if (wallets) {
+      wallets.forEach((w: any) => {
+        if (w.isConnected) w.disconnect();
+      });
     }
     setDemoWalletAddress(null);
     setDropdownOpen(false);
@@ -280,22 +287,22 @@ export default function Navbar({
                       fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
                     }}
                   >
-                    <Wallet size={13} /> Connect Lute Wallet
+                    <Wallet size={13} /> Connect Wallet
                   </button>
                 ) : !activeIsConnected ? (
                   <button
-                    onClick={handleConnect}
+                    onClick={handleOpenModal}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
-                      borderRadius: 11, border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.05)', color: '#bbb',
-                      fontFamily: 'Inter', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                      borderRadius: 11, border: '1px solid rgba(0, 229, 255, 0.3)',
+                      background: 'rgba(0, 229, 255, 0.08)', color: '#00e5ff',
+                      fontFamily: 'Inter', fontWeight: 600, fontSize: 13, cursor: 'pointer',
                       transition: 'all 0.2s',
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.09)'; (e.currentTarget as HTMLButtonElement).style.color = '#eee'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.color = '#bbb'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0, 229, 255, 0.6)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 229, 255, 0.16)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0, 229, 255, 0.3)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 229, 255, 0.08)'; }}
                   >
-                    <Wallet size={13} /> Connect Lute Wallet
+                    <Wallet size={13} /> Connect Wallet
                   </button>
                 ) : (
                   <button
@@ -750,16 +757,16 @@ export default function Navbar({
                 {!mounted || !activeIsConnected ? (
                   <button
                     onClick={() => {
-                      handleConnect();
+                      handleOpenModal();
                       setMenuOpen(false);
                     }}
                     style={{
                       marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      padding: '13px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.05)', color: '#ccc', fontFamily: 'Inter', fontSize: 14, cursor: 'pointer',
+                      padding: '13px', borderRadius: 12, border: '1px solid rgba(0, 229, 255, 0.3)',
+                      background: 'rgba(0, 229, 255, 0.08)', color: '#00e5ff', fontFamily: 'Inter', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                     }}
                   >
-                    <Wallet size={14} /> Connect Lute Wallet
+                    <Wallet size={14} /> Connect Wallet
                   </button>
                 ) : (
                   <button
@@ -808,6 +815,16 @@ export default function Navbar({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Multi Wallet Connection Modal */}
+      <WalletConnectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelectDemo={() => {
+          setDemoWalletAddress('GQHCRMG3DSGF6OWFQ6W6MT5CDV5IZTNEVHFYKNB42EI4VDOINC6AZSYB74');
+          setShowLuteAlert(true);
+        }}
+      />
     </>
   );
 }

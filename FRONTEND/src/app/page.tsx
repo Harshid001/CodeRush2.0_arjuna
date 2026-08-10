@@ -14,14 +14,14 @@ const S = {
   section: { position: 'relative' as const, zIndex: 1 },
   label: {
     fontFamily: 'Inter', fontSize: 11, fontWeight: 600,
-    letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#444',
+    letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#a1a1aa',
   },
   h2: {
     fontFamily: 'Playfair Display, Georgia, serif', fontWeight: 600,
     fontSize: 'clamp(1.9rem, 3.2vw, 2.8rem)', color: '#efefef',
     letterSpacing: '-0.025em', lineHeight: 1.12,
   },
-  body: { fontFamily: 'Inter', fontSize: 15, color: '#555', lineHeight: 1.8 },
+  body: { fontFamily: 'Inter', fontSize: 15, color: '#d4d4d8', lineHeight: 1.8 },
 };
 
 /* ─── Dashboard Mockup ─────────────────────────────────────────────────── */
@@ -44,7 +44,7 @@ function MockDashboard() {
           <div style={{ display: 'flex', gap: 6 }}>
             {['#ff5f57', '#ffbd2e', '#27c93f'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: 0.65 }} />)}
           </div>
-          <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#444' }}>API Analytics · Live</span>
+          <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#a1a1aa' }}>API Analytics · Live</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20, background: 'rgba(50,120,50,0.12)', border: '1px solid rgba(50,120,50,0.2)' }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#3d8a3d', display: 'block' }} />
             <span style={{ fontFamily: 'Inter', fontSize: 10, color: '#4a8a4a' }}>Live</span>
@@ -55,7 +55,7 @@ function MockDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.04)' }}>
           {[{ l: 'Requests', v: '2.4M', t: '+12%' }, { l: 'Revenue', v: '$48.2K', t: '+8%' }, { l: 'Uptime', v: '99.9%', t: '↑' }].map(s => (
             <div key={s.l} style={{ padding: '14px 16px', background: 'rgba(12,12,14,0.97)' }}>
-              <div style={{ fontFamily: 'Inter', fontSize: 10, color: '#3a3a3a', marginBottom: 4 }}>{s.l}</div>
+              <div style={{ fontFamily: 'Inter', fontSize: 10, color: '#a1a1aa', marginBottom: 4 }}>{s.l}</div>
               <div style={{ fontFamily: 'Inter', fontSize: 15, fontWeight: 600, color: '#e0e0e0', letterSpacing: '-0.02em' }}>{s.v}</div>
               <div style={{ fontFamily: 'Inter', fontSize: 10, color: '#3a7a3a', marginTop: 2 }}>{s.t}</div>
             </div>

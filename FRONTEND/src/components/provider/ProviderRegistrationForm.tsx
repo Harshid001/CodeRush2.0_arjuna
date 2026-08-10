@@ -120,8 +120,8 @@ export default function ProviderRegistrationForm({
         reset,
         setValue,
         formState: { errors, isSubmitting },
-    } = useForm<FormValues>({
-        resolver: zodResolver(providerSchema),
+    } = useForm({
+        resolver: zodResolver(providerSchema) as any,
         defaultValues: {
             providerName: '',
             companyName: '',
@@ -163,14 +163,14 @@ export default function ProviderRegistrationForm({
     }, [tagInput, currentTags, setValue]);
 
     const removeTag = (tag: string) => {
-        setValue('tags', currentTags.filter((t) => t !== tag));
+        setValue('tags', currentTags.filter((t: string) => t !== tag));
     };
 
     /* ─── Method toggle ─── */
     const currentMethods = watch('supportedMethods');
     const toggleMethod = (method: string) => {
         if (currentMethods.includes(method)) {
-            setValue('supportedMethods', currentMethods.filter((m) => m !== method));
+            setValue('supportedMethods', currentMethods.filter((m: string) => m !== method));
         } else {
             setValue('supportedMethods', [...currentMethods, method]);
         }
@@ -492,7 +492,7 @@ export default function ProviderRegistrationForm({
                     </div>
                     {currentTags.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                            {currentTags.map((tag) => (
+                            {currentTags.map((tag: string) => (
                                 <span
                                     key={tag}
                                     style={{

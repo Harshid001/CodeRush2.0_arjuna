@@ -86,8 +86,8 @@ function getStorePaths(): { store: string | null; tmp: string | null } {
 function loadFromDisk(): Map<string, ProvenanceRecord> {
   try {
     const { store } = getStorePaths();
-    if (!store || !fs.existsSync(store)) return new Map();
-    const raw = fs.readFileSync(store, "utf-8");
+    if (!store || !fs.existsSync(/*turbopackIgnore: true*/ store)) return new Map();
+    const raw = fs.readFileSync(/*turbopackIgnore: true*/ store, "utf-8");
     const parsed: Record<string, ProvenanceRecord> = JSON.parse(raw);
     return new Map(Object.entries(parsed));
   } catch (err) {

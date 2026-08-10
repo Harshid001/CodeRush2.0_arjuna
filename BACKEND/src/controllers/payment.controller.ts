@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import mongoose from "mongoose";
+import crypto from "crypto";
 import { paymentService } from "../services/payment.service";
 import { budgetService } from "../services/budget.service";
 import { policyService } from "../services/policy.service";
 import { providerService } from "../services/provider.service";
 import { receiptService } from "../services/receipt.service";
 import { ApiError } from "../utils/ApiError";
+import { logger } from "../utils/logger";
 
 const createSchema = z.object({
   providerId: z.string().min(1),
@@ -20,11 +23,36 @@ const createSchema = z.object({
 
 export class PaymentController {
   createAndExecute = async (req: Request, res: Response, next: NextFunction) => {
-    console.error("[PAYMENTS API] REQUEST RECEIVED");
-    console.error("[PAYMENTS API] BODY FIELDS:", Object.keys(req.body || {}));
+    logger.info("[PaymentController] Request received", { path: req.path, method: req.method });
+    
+    let session: mongoose.ClientSession | null = null;
     try {
+      if (mongoose.connection.readyState === 1) {
+        try {
+          session = await mongoose.startSession();
+          session.startTransaction();
+        } catch {
+          session = null;
+        }
+      }
+
       const input = createSchema.parse(req.body);
       const userId = req.auth?.userId || "anonymous";
+
+      const idempotencyKey = (req.headers["idempotency-key"] as string) || input.requirementNonce;
+      if (idempotencyKey) {
+        const existingReceipt = await receiptService.getByPaymentId(idempotencyKey);
+        if (existingReceipt) {
+          if (session) {
+            await session.abortTransaction();
+            session.endSession();
+          }
+          return res.status(200).json({
+            success: true,
+            data: { receipt: existingReceipt, isIdempotentReplay: true },
+          });
+        }
+      }
 
       const provider = await providerService.getById(input.providerId);
       if (provider && !provider.active) {
@@ -43,12 +71,15 @@ export class PaymentController {
 
       const payment = await paymentService.create({ ...input, userId });
 
-      const inputHash = `hash_in_${payment._id}_${Date.now()}`;
-      const outputHash = `hash_out_${payment._id}_${Date.now() + 1}`;
-      const latencyMs = Math.floor(Math.random() * 200) + 20;
-
       const settlementId = `settle_${payment._id}`;
       const finalAmount = input.scheme === "upto" ? Math.round(input.amount * 0.6 * 100) / 100 : input.amount;
+
+      const inputPayloadStr = JSON.stringify({ providerId: input.providerId, amount: input.amount, nonce: input.requirementNonce, payerKeyId: input.payerKeyId });
+      const inputHash = crypto.createHash("sha256").update(inputPayloadStr).digest("hex");
+      const outputPayloadStr = JSON.stringify({ paymentId: payment._id.toString(), settlementId, finalAmount, timestamp: Date.now() });
+      const outputHash = crypto.createHash("sha256").update(outputPayloadStr).digest("hex");
+
+      const latencyMs = Math.floor(Math.random() * 200) + 20;
 
       await paymentService.verify(payment._id.toString());
       const settled = await paymentService.settle(payment._id.toString(), settlementId, finalAmount, inputHash, outputHash, latencyMs);
@@ -56,11 +87,7 @@ export class PaymentController {
       await budgetService.recordSpend(userId, input.providerId, finalAmount);
 
       if (provider) {
-        await providerService.update(input.providerId, {
-          totalCalls: (provider.totalCalls || 0) + 1,
-          totalRevenue: (provider.totalRevenue || 0) + finalAmount,
-          avgLatencyMs: Math.round(((provider.avgLatencyMs || 50) * (provider.totalCalls || 0) + latencyMs) / ((provider.totalCalls || 0) + 1)),
-        } as any);
+        await providerService.recordCall(input.providerId, latencyMs, finalAmount);
       }
 
       const receipt = await receiptService.create({
@@ -82,21 +109,21 @@ export class PaymentController {
         network: input.network,
       });
 
+      if (session) {
+        await session.commitTransaction();
+        session.endSession();
+      }
+
       res.status(201).json({
         success: true,
         data: { payment: settled, receipt, requiresApproval: budgetCheck.requiresApproval },
       });
     } catch (err: any) {
-      console.error("========== PAYMENTS API ERROR ==========");
-      console.error("ERROR:", String(err));
-
-      if (err instanceof Error) {
-        console.error("NAME:", err.name);
-        console.error("MESSAGE:", err.message);
-        console.error("STACK:", err.stack);
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
       }
-
-      console.error("========================================");
+      logger.error("[PaymentController] Error executing payment", { error: err.message || String(err) });
       next(err);
     }
   };

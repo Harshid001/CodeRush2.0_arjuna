@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: nexus-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+  backend:
+    build:
+      context: ./BACKEND
+      dockerfile: Dockerfile
+    container_name: nexus-backend
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/x402-marketplace
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      - mongodb
+    restart: always
+
+  frontend:
+    build:
+      context: ./FRONTEND
+      dockerfile: Dockerfile
+    container_name: nexus-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  mongo_data:
