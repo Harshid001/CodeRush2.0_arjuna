@@ -7,6 +7,8 @@ const router = Router();
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 router.post("/google", authController.googleAuth);
+router.post("/wallet", authController.walletAuth);
+router.get("/wallet/nonce", authController.walletNonce);
 router.get("/profile", authenticate, authController.profile);
 router.put("/profile", authenticate, authController.updateProfile);
 

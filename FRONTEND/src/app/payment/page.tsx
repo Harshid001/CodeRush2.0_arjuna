@@ -74,33 +74,33 @@ function PaymentCheckoutInner() {
             ? '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4'
             : null;
 
-    // ── Connect Lute ────────────────────────────────────────
+    // ── Connect Active Wallet ────────────────────────────────────────
     const handleConnectLute = useCallback(async () => {
         setWalletError(null);
-        const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
+        const activeWallet = wallets?.find((w: any) => w.isConnected) || wallets?.find((w: any) => w.id === WalletId.LUTE) || wallets?.[0];
 
-        if (!luteWallet) {
-            setWalletError('Lute wallet extension not detected. Install Lute or use Demo Mode below.');
+        if (!activeWallet) {
+            setWalletError('No wallet provider detected. Connect via Navbar or use Demo Mode.');
             setWalletStatus('error');
             return;
         }
 
-        if (luteWallet.isConnected) {
+        if (activeWallet.isConnected) {
             setWalletStatus('connected');
             return;
         }
 
         setWalletStatus('connecting');
         try {
-            await luteWallet.connect();
+            await activeWallet.connect();
             setWalletStatus('connected');
             setWalletError(null);
         } catch (err: any) {
             const msg: string = err?.message ?? String(err);
             if (msg.includes('User Rejected') || msg.includes('user rejected') || err?.code === 4100) {
-                setWalletError('Connection rejected by user in Lute Wallet.');
+                setWalletError('Connection rejected by user.');
             } else if (msg.includes('Could not establish connection') || msg.includes('Receiving end does not exist')) {
-                setWalletError('Lute extension connection lost. Please refresh and try again.');
+                setWalletError('Wallet connection lost. Please refresh and try again.');
             } else {
                 setWalletError(`Wallet error: ${msg}`);
             }
@@ -109,9 +109,10 @@ function PaymentCheckoutInner() {
     }, [wallets]);
 
     const handleDisconnect = useCallback(() => {
-        const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
-        if (luteWallet?.isConnected) {
-            luteWallet.disconnect();
+        if (wallets) {
+            wallets.forEach((w: any) => {
+                if (w.isConnected) w.disconnect();
+            });
         }
         setWalletStatus('disconnected');
         setDemoMode(false);

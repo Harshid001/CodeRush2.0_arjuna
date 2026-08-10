@@ -13,6 +13,9 @@ import { PaymentProvider } from '@/context/PaymentContext';
 
 import { AuthProvider } from '@/context/AuthContext';
 
+import { WagmiProvider } from 'wagmi';
+import { wagmiConfig } from '@/lib/wagmi';
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -28,21 +31,23 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
-      <WalletProvider manager={walletManager}>
-        <QueryClientProvider client={queryClient}>
-          <ProviderStatusProvider>
-            <ReceiptProvider>
-              <ProviderProvider>
-                <PaymentProvider>
-                  <CompareProvider>
-                    {children}
-                  </CompareProvider>
-                </PaymentProvider>
-              </ProviderProvider>
-            </ReceiptProvider>
-          </ProviderStatusProvider>
-        </QueryClientProvider>
-      </WalletProvider>
+      <WagmiProvider config={wagmiConfig}>
+        <WalletProvider manager={walletManager}>
+          <QueryClientProvider client={queryClient}>
+            <ProviderStatusProvider>
+              <ReceiptProvider>
+                <ProviderProvider>
+                  <PaymentProvider>
+                    <CompareProvider>
+                      {children}
+                    </CompareProvider>
+                  </PaymentProvider>
+                </ProviderProvider>
+              </ReceiptProvider>
+            </ProviderStatusProvider>
+          </QueryClientProvider>
+        </WalletProvider>
+      </WagmiProvider>
     </AuthProvider>
   );
 }

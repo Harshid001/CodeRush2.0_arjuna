@@ -7,6 +7,7 @@ import { paymentRoutes } from "./payment.routes";
 import { receiptRoutes } from "./receipt.routes";
 import { transactionRoutes } from "./transaction.routes";
 import { analyticsRoutes } from "./analytics.routes";
+import { walletRoutes } from "./wallet.routes";
 
 import pdfRoutes from "./pdf.routes";
 
@@ -20,6 +21,7 @@ router.use("/payments", paymentRoutes);
 router.use("/receipts", receiptRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/analytics", analyticsRoutes);
+router.use("/wallet", walletRoutes);
 router.use("/pdf", pdfRoutes);
 
 export { router as apiRoutes };

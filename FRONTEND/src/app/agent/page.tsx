@@ -67,12 +67,12 @@ export default function AgentPage() {
   }, []);
 
   const handleConfirmSignature = useCallback(async () => {
-    console.log('[AGENT PAGE] User clicked Confirm / Prompt Lute Signature');
+    console.log('[AGENT PAGE] User clicked Confirm / Prompt Wallet Signature');
     try {
-      const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
-      if (luteWallet && !luteWallet.isConnected) {
-        await luteWallet.connect().catch((err: any) => {
-          console.warn('[AGENT PAGE] Handled Lute wallet connection error:', err?.message || String(err));
+      const activeWallet = wallets?.find((w: any) => w.isConnected) || wallets?.[0];
+      if (activeWallet && !activeWallet.isConnected) {
+        await activeWallet.connect().catch((err: any) => {
+          console.warn('[AGENT PAGE] Handled wallet connection error:', err?.message || String(err));
         });
       }
     } catch (err) {
@@ -191,20 +191,20 @@ export default function AgentPage() {
       };
     }
 
-    // ── Detect Lute ─────────────────────────────────────────────────────────
-    const luteWallet = wallets?.find((w: any) => w.id === WalletId.LUTE);
-    const luteDetected = !!luteWallet;
-    console.log('[WALLET CONFIG] LUTE DETECTED:', luteDetected);
+    // ── Detect Connected Wallet ─────────────────────────────────────────────
+    const activeWallet = wallets?.find((w: any) => w.isConnected) || wallets?.find((w: any) => w.id === WalletId.LUTE) || wallets?.[0];
+    const walletDetected = !!activeWallet;
+    console.log('[WALLET CONFIG] WALLET DETECTED:', walletDetected);
 
-    if (!luteDetected) {
+    if (!walletDetected) {
       if (isBypassedRef.current) {
         return {
           account: { address: '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4' },
           signTxns: async (txns: Uint8Array[]) => txns.map(() => new Uint8Array([1, 2, 3, 4])),
         };
       }
-      const msg = 'Lute Wallet not detected. Please install the Lute browser extension or click Auto-Sign below.';
-      console.error('[WALLET CONFIG] LUTE NOT FOUND');
+      const msg = 'Wallet not connected. Please connect your wallet using the top Navbar button or click Auto-Sign below.';
+      console.error('[WALLET CONFIG] NO WALLET CONNECTED');
       setWalletStatus('error');
       setWalletError(msg);
       throw new Error(msg);
@@ -230,7 +230,7 @@ export default function AgentPage() {
     };
 
     // ── Check existing connection via ref ──────────────────────────────────
-    const currentAccount = activeAccountRef.current ?? luteWallet?.activeAccount;
+    const currentAccount = activeAccountRef.current ?? (activeWallet as any)?.activeAccount;
     if (currentAccount?.address) {
       console.log('[WALLET CONFIG] EXISTING CONNECTION:', currentAccount.address.slice(0, 8) + '...');
       try {
@@ -239,7 +239,7 @@ export default function AgentPage() {
         console.warn('[WALLET CONFIG] On-chain validation warning:', e);
       }
 
-      const freshSignTxns = (luteWallet as any).signTransactions?.bind(luteWallet)
+      const freshSignTxns = (activeWallet as any)?.signTransactions?.bind(activeWallet)
         ?? signTransactionsRef.current;
       return { account: currentAccount, signTxns: createSignTxnsWithBypass(freshSignTxns) };
     }
@@ -255,9 +255,9 @@ export default function AgentPage() {
             signTxns: async (txns: Uint8Array[]) => txns.map(() => new Uint8Array([1, 2, 3, 4])),
           };
         }
-        const acc = activeAccountRef.current ?? luteWallet.activeAccount;
+        const acc = activeAccountRef.current ?? (activeWallet as any)?.activeAccount;
         if (acc?.address) {
-          const freshSignTxns = (luteWallet as any).signTransactions?.bind(luteWallet)
+          const freshSignTxns = (activeWallet as any)?.signTransactions?.bind(activeWallet)
             ?? signTransactionsRef.current;
           return { account: acc, signTxns: createSignTxnsWithBypass(freshSignTxns) };
         }
@@ -269,7 +269,7 @@ export default function AgentPage() {
     setWalletStatus('connecting');
 
     try {
-      await luteWallet.connect();
+      await activeWallet.connect();
     } catch (err: any) {
       connectingRef.current = false;
       const message: string = err?.message ?? String(err);
@@ -281,7 +281,7 @@ export default function AgentPage() {
         console.warn('[WALLET CONFIG] Extension connection disconnect handled safely:', message);
         return {
           account: activeAccountRef.current ?? { address: '36UMZNGBAZMINJH7266YYGHTR2OLEHTFRREB6ROQI3XA54EQXXCLTZTMG4' },
-          signTxns: createSignTxnsWithBypass((luteWallet as any).signTransactions?.bind(luteWallet) ?? signTransactionsRef.current),
+          signTxns: createSignTxnsWithBypass((activeWallet as any)?.signTransactions?.bind(activeWallet) ?? signTransactionsRef.current),
         };
       }
       if (isBypassedRef.current) {
@@ -296,8 +296,8 @@ export default function AgentPage() {
     }
 
     connectingRef.current = false;
-    const resolvedAccount = activeAccountRef.current ?? luteWallet.activeAccount;
-    const freshSignTxns = (luteWallet as any).signTransactions?.bind(luteWallet)
+    const resolvedAccount = activeAccountRef.current ?? (activeWallet as any)?.activeAccount;
+    const freshSignTxns = (activeWallet as any)?.signTransactions?.bind(activeWallet)
       ?? signTransactionsRef.current;
 
     return {
